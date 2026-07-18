@@ -64,7 +64,7 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
 .who .cv{font-size:11px;color:var(--tx3)}
 .sync{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--tx3);white-space:nowrap}
 .sync.on{color:var(--green);border-color:rgba(47,214,123,.4);background:rgba(47,214,123,.1)}
-.sync.off{color:var(--tx3)}
+.sync.off{color:var(--red);border-color:rgba(255,92,122,.5);background:rgba(255,92,122,.14);font-weight:800}
 .sync.err{color:var(--red);border-color:rgba(255,92,122,.4);background:rgba(255,92,122,.1)}
 
 /* ---------- generic ---------- */
@@ -120,6 +120,10 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
   background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);color:var(--tx3);font-size:14px}
 .clear.on{background:linear-gradient(135deg,#1f5b38,#2a7d4d);border:1px solid var(--green);color:#fff;
   box-shadow:0 0 26px rgba(47,214,123,.35)}
+
+/* ---------- เตือนยังไม่ได้เชื่อมข้อมูลส่วนกลาง ---------- */
+.offline{background:linear-gradient(150deg,#3d1230,#1a2245);border-color:rgba(255,92,122,.45)}
+.offline code{background:rgba(0,0,0,.35);padding:1px 5px;border-radius:5px;font-size:11px}
 
 /* ---------- ตามผลลูกค้า ---------- */
 .nudge{background:linear-gradient(150deg,#3a2f10,#1a2245);border-color:rgba(255,197,61,.35)}
@@ -270,7 +274,7 @@ label{display:block;font-size:12px;font-weight:800;color:var(--tx3);margin:12px 
  <div class="wrap hbar">
    <img class="brand" src="icons/icon-192.png" alt="MK Industrial Supply" width="30" height="30">
    <div class="logo">SALES <span>QUEST</span><small>MK INDUSTRIAL SUPPLY</small></div>
-   <span class="sync off" id="syncBadge">ออฟไลน์</span>
+   <span class="sync off" id="syncBadge">⚠️ ยังไม่เชื่อม</span>
    <button class="who" id="whoBtn"><span class="av" id="whoAv">?</span><span><span id="whoName">เลือกเซล</span><br><span class="cv" id="whoRole"></span></span></button>
  </div>
 </header>
@@ -405,7 +409,7 @@ const Sync = {
 
   async pull(silent){
     const c = Store.cfg(), url = c.syncUrl;
-    if (!url) { this.badge('off','ออฟไลน์'); return; }
+    if (!url) { this.badge('off','⚠️ ยังไม่เชื่อม'); return; }
     try{
       this.badge('on','กำลังซิงก์…');
       const q = 'action=list&token=' + encodeURIComponent(c.syncToken) + '&t=' + Date.now();
@@ -659,6 +663,21 @@ function viewQuest(){
         `<span class="bdg ${st>=m?'':'locked'}">${st>=m?'🏅':'🔒'} ${m} วัน</span>`).join('')}</div>
     </div></div>`;
   if (risk) h += `<div class="card warn" style="margin-top:-6px">⚠️ วันนี้ยังทักไม่ครบ — เหลืออีก ${QMAP.lead.target-leadC} เจ้า ไม่งั้น streak ${st} วันขาด!</div>`;
+
+  /* เตือนตัวโตถ้ายังไม่ได้เชื่อม Google Sheet — ไม่งั้นกรอกไปเท่าไหร่ก็อยู่แค่ในเครื่อง */
+  if (!cfg().syncUrl){
+    h += `<div class="card offline">
+      <div class="row"><span style="font-size:26px">📵</span>
+        <div class="grow"><b style="font-size:15px">ยังไม่ได้เชื่อมข้อมูลส่วนกลาง</b>
+          <div class="mut3" style="font-size:12.5px;margin-top:3px">
+            ตอนนี้ข้อมูลเก็บอยู่ในเครื่องนี้เครื่องเดียว — ทีมยังไม่เห็น และถ้าเปลี่ยนเครื่องข้อมูลจะไม่ตามไป
+          </div></div></div>
+      <div class="mut3" style="font-size:12px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.1)">
+        👉 เปิด <b>“ลิงก์ตั้งค่า”</b> ที่หัวหน้าส่งให้ในไลน์ (ลิงก์ยาวที่มี <code>#setup=</code>) ในเครื่องนี้
+        <br>ข้อมูลที่กรอกไปแล้วจะถูกส่งขึ้นให้อัตโนมัติ ไม่หายครับ
+      </div>
+    </div>`;
+  }
 
   /* เตือนให้ตามผลลูกค้าที่ทักไปแล้วเงียบ */
   const due = Lead.needUpdate(u.id);
