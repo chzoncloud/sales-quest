@@ -107,7 +107,18 @@ function doPost(e) {
         if (existing[id]) sh.getRange(existing[id], 10).setValue(true);
         return;
       }
-      if (existing[id]) return;             // มีแล้ว ข้าม
+      // แก้ไขรายการเดิม → เขียนทับแถวนั้น (ฝั่งแอปส่ง edited:true มาให้)
+      if (x.edited && existing[id] > 0) {
+        sh.getRange(existing[id], 1, 1, HEADERS.length).setValues([[
+          id, x.rep || '', x.date || '', x.type || '',
+          x.name || '', x.phone || '', x.note || '',
+          x.amount || '', x.ts || Date.now(), '',
+          x.ref || '', x.stage || ''
+        ]]);
+        return;
+      }
+
+      if (existing[id]) return;             // มีแล้ว ข้าม (กันบันทึกซ้ำตอนซิงก์)
 
       existing[id] = -1;                    // กันซ้ำภายใน batch เดียวกัน
       toAppend.push([

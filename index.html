@@ -202,7 +202,10 @@ pre.sum{white-space:pre-wrap;word-break:break-word;font-family:'Noto Sans Thai',
 .log .li{font-size:17px;flex:none;width:24px;text-align:center}
 .log b{font-weight:700}
 .log .lt{margin-left:auto;font-size:11px;color:var(--tx3);flex:none;white-space:nowrap}
-.del{background:none;color:var(--tx3);font-size:15px;padding:0 2px;flex:none;opacity:.5}
+.del{background:none;color:var(--tx3);font-size:15px;padding:4px 5px;flex:none;opacity:.55}
+.del:active{opacity:1;transform:scale(.9)}
+.gohand{cursor:pointer}
+.gohand:active b{color:var(--gold)}
 
 /* ---------- nav ---------- */
 nav{position:fixed;bottom:0;left:0;right:0;z-index:50;
@@ -376,6 +379,18 @@ const Store = {
     const q = this.queue(); q.push(e); this.setQueue(q);
     Sync.push();
     return e;
+  },
+  /* แก้ไขรายการที่บันทึกไปแล้ว — ทำเครื่องหมาย edited เพื่อให้ฝั่งชีทเขียนทับแถวเดิม
+     (ปกติชีทจะข้าม id ที่มีอยู่แล้ว เพื่อกันบันทึกซ้ำตอนซิงก์) */
+  update(id, patch){
+    const a = this.entries();
+    const i = a.findIndex(e => e.id === id);
+    if (i < 0) return null;
+    Object.assign(a[i], patch, { edited: true });
+    this.setEntries(a);
+    const q = this.queue(); q.push(Object.assign({}, a[i])); this.setQueue(q);
+    Sync.push();
+    return a[i];
   },
   remove(id){
     this.setEntries(this.entries().filter(e => e.id !== id));
@@ -741,12 +756,13 @@ function viewQuest(){
         const title = st ? (refName || 'ลูกค้า') + ' → ' + st.label
                     : e.name || (e.type === 'deal' ? 'ปิดการขาย' : q ? q.title : e.type);
         return `<div class="log"><span class="li">${icon}</span>
-          <div class="grow"><b>${esc(title)}</b>
+          <div class="grow gohand" onclick="editEntry('${e.id}')"><b>${esc(title)}</b>
           ${e.amount?` <span style="color:var(--gold);font-weight:800">${Number(e.amount).toLocaleString()} ฿</span>`:''}
           ${e.phone?`<div class="mut3" style="font-size:11.5px">📞 ${esc(e.phone)}</div>`:''}
           ${e.note ?`<div class="mut3" style="font-size:11.5px">${esc(e.note)}</div>`:''}</div>
           <span class="lt">${new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>
-          <button class="del" onclick="delEntry('${e.id}')">🗑</button></div>`;
+          <button class="del" onclick="editEntry('${e.id}')" title="แก้ไข">✏️</button>
+          <button class="del" onclick="delEntry('${e.id}')" title="ลบ">🗑</button></div>`;
       }).join('') : '<div class="empty">ยังไม่มีบันทึกวันนี้ — กด + ที่เควสต์ด้านบนได้เลย</div>';
   h += `</div>`;
   return h;
@@ -1181,7 +1197,45 @@ function undoLast(type){
   if (!list.length) return;
   Store.remove(list[0].id); render(); toast('ลบรายการล่าสุดแล้ว');
 }
-function delEntry(id){ Store.remove(id); render(); toast('ลบแล้ว'); }
+function delEntry(id){
+  const e = Store.entries().find(x => x.id === id);
+  const label = e && e.name ? '"' + e.name + '"' : 'รายการนี้';
+  if (!confirm('ลบ ' + label + ' ออกจากบันทึก?')) return;
+  Store.remove(id); render(); toast('ลบแล้ว');
+}
+
+/* แก้ไขรายการที่บันทึกไปแล้ว — เผื่อพิมพ์ผิด */
+function editEntry(id){
+  const e = Store.entries().find(x => x.id === id);
+  if (!e) return;
+  const isDeal = e.type === 'deal' || (e.type === 'status' && e.stage === 'won');
+  const q = QMAP[e.type], st = e.type === 'status' ? SMAP[e.stage] : null;
+
+  modal(`<div class="mt">✏️ แก้ไขรายการ</div>
+    <div class="ms">${st ? st.icon + ' ' + st.label : (q ? q.icon + ' ' + q.title : '💵 ปิดการขาย')} · ${thDate(e.date)}</div>
+    ${e.type === 'status' ? '' : `
+      <label>ชื่อลูกค้า / โรงงาน</label><input class="inp" id="eName" value="${esc(e.name||'')}">
+      <label>เบอร์โทร</label><input class="inp" id="ePhone" inputmode="tel" value="${esc(e.phone||'')}">`}
+    <label>หมายเหตุ</label><input class="inp" id="eNote" value="${esc(e.note||'')}">
+    ${isDeal ? `<label>ยอด (บาท/ปี)</label><input class="inp" id="eAmt" type="number" inputmode="numeric" value="${e.amount||''}">` : ''}
+    <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn" onclick="saveEdit('${id}')">บันทึกการแก้ไข</button></div>`);
+  setTimeout(() => { const el = $('#eName') || $('#eNote'); if (el){ el.focus(); el.select && el.select(); } }, 60);
+}
+
+function saveEdit(id){
+  const patch = {};
+  if ($('#eName'))  patch.name  = $('#eName').value.trim();
+  if ($('#ePhone')) patch.phone = $('#ePhone').value.trim();
+  if ($('#eNote'))  patch.note  = $('#eNote').value.trim();
+  if ($('#eAmt')){
+    const a = Number($('#eAmt').value);
+    if (!a || a <= 0){ toast('ใส่ยอดด้วยครับ'); return; }
+    patch.amount = a;
+  }
+  Store.update(id, patch);
+  closeModal(); render(); toast('แก้ไขแล้ว ✅');
+}
 
 function setRange(r){ LBRANGE = r; render(); }
 
@@ -1261,28 +1315,46 @@ const Setup = {
     return new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0)));
   },
 
+  PREFIX: 'https://script.google.com/macros/s/',
+  SUFFIX: '/exec',
+
+  /* ลิงก์แบบสั้น #s=<scriptId>.<token> — สั้นพอที่จะทำ QR ให้สแกนง่าย */
   link(){
     const c = cfg();
-    const payload = this.enc(JSON.stringify({ u:c.syncUrl, t:c.syncToken }));
-    return location.origin + location.pathname + '#setup=' + payload;
+    const id = c.syncUrl.replace(this.PREFIX,'').replace(this.SUFFIX,'');
+    return location.origin + location.pathname + '#s=' + id + '.' + c.syncToken;
   },
 
   /* อ่านค่าจาก URL ตอนเปิดแอป แล้วลบ hash ทิ้งทันที ไม่ให้ค้างในประวัติเบราว์เซอร์ */
   apply(){
-    const m = location.hash.match(/setup=([A-Za-z0-9\-_]+)/);
-    if (!m) return false;
-    try{
-      const d = JSON.parse(this.dec(m[1]));
-      const c = cfg();
-      if (d.u) c.syncUrl = d.u;
-      if (d.t) c.syncToken = d.t;
-      Store.saveCfg(c);
-      history.replaceState(null, '', location.pathname);
-      return true;
-    }catch(e){
-      history.replaceState(null, '', location.pathname);
-      return false;
+    const c = cfg();
+    let got = false;
+
+    // แบบสั้น (ใหม่)
+    const s = location.hash.match(/[#&]s=([A-Za-z0-9\-_]+)\.([A-Za-z0-9\-_]+)/);
+    if (s){
+      c.syncUrl = this.PREFIX + s[1] + this.SUFFIX;
+      c.syncToken = s[2];
+      got = true;
     }
+
+    // แบบเดิม #setup=<base64> — ยังรองรับ เผื่อมีคนเก็บลิงก์เก่าไว้
+    if (!got){
+      const m = location.hash.match(/setup=([A-Za-z0-9\-_]+)/);
+      if (m){
+        try{
+          const d = JSON.parse(this.dec(m[1]));
+          if (d.u) c.syncUrl = d.u;
+          if (d.t) c.syncToken = d.t;
+          got = true;
+        }catch(e){ /* ลิงก์เสีย ปล่อยผ่าน */ }
+      }
+    }
+
+    if (location.hash) history.replaceState(null, '', location.pathname);
+    if (!got) return false;
+    Store.saveCfg(c);
+    return true;
   },
 
   share(){
