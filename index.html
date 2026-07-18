@@ -245,7 +245,8 @@ nav{position:fixed;bottom:0;left:0;right:0;z-index:50;
   display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
 .modal{width:100%;max-width:560px;background:linear-gradient(180deg,var(--card2),var(--bg2));
   border-radius:24px 24px 0 0;padding:22px 18px calc(24px + env(safe-area-inset-bottom));
-  border-top:1px solid rgba(255,255,255,.14);animation:up .28s cubic-bezier(.2,.9,.3,1);max-height:92vh;overflow:auto}
+  border-top:1px solid rgba(255,255,255,.14);animation:up .28s cubic-bezier(.2,.9,.3,1);
+  max-height:calc(92vh - env(safe-area-inset-top,0px));overflow:auto}
 @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .mt{font-size:18px;font-weight:900;margin:0 0 4px}
@@ -265,11 +266,13 @@ label{display:block;font-size:12px;font-weight:800;color:var(--tx3);margin:12px 
 .pick.on{border-color:var(--gold);background:rgba(255,197,61,.12)}
 
 /* ---------- fx ---------- */
-.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:200;
+/* ต้องบวก safe-area ไม่งั้นเด้งไปอยู่ใต้รอยบาก/Dynamic Island แล้วมองไม่เห็น */
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:200;
   background:linear-gradient(135deg,#2fd67b,#1fa85e);color:#04240f;font-weight:900;font-size:14px;
   padding:11px 20px;border-radius:999px;box-shadow:0 8px 26px rgba(0,0,0,.4);animation:pop .3s;white-space:nowrap}
 .toast.gold{background:linear-gradient(135deg,var(--gold),var(--orange));color:#3a2200}
-@keyframes pop{from{opacity:0;transform:translate(-50%,-18px) scale(.85)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+/* เด้งขึ้นจากด้านล่าง ไม่ใช่ลอยลงมาจากด้านบน — กันไม่ให้แว่บไปอยู่ใต้ Dynamic Island ตอนเริ่ม */
+@keyframes pop{from{opacity:0;transform:translate(-50%,10px) scale(.9)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 .conf{position:fixed;z-index:150;pointer-events:none;font-size:18px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}
 .empty{text-align:center;color:var(--tx3);padding:26px 12px;font-size:13.5px}
@@ -512,7 +515,8 @@ function toast(msg, gold){
   t.className = 'toast' + (gold ? ' gold' : '');
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => { t.style.transition='.3s'; t.style.opacity='0'; t.style.transform='translate(-50%,-14px)'; }, 1500);
+  // จางหายอยู่กับที่ (ไม่ลอยขึ้น) จะได้ไม่ไปโผล่ใต้ Dynamic Island ตอนจบ
+  setTimeout(() => { t.style.transition='.3s'; t.style.opacity='0'; t.style.transform='translate(-50%,0) scale(.92)'; }, 1500);
   setTimeout(() => t.remove(), 1850);
 }
 function confetti(){
