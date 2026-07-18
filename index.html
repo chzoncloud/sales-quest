@@ -120,8 +120,12 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
 .qi{font-size:26px;width:34px;text-align:center;flex:none}
 .qt{font-weight:800;font-size:14.5px}
 .qs{font-size:12px;color:var(--tx3);margin-top:2px}
-.bar{height:6px;background:rgba(255,255,255,.09);border-radius:99px;margin-top:7px;overflow:hidden}
+.bar{height:6px;background:rgba(255,255,255,.09);border-radius:99px;margin-top:7px;position:relative}
 .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .5s cubic-bezier(.2,.9,.3,1)}
+/* ขีดบอกตำแหน่ง "ขั้นต่ำ" บนแถบ */
+.bar u{position:absolute;top:-3px;width:2px;height:12px;background:rgba(255,255,255,.55);border-radius:2px}
+.qmulti{display:flex;gap:6px;flex:none}
+.qb.sm{width:38px;height:38px;font-size:17px;border-radius:12px}
 .quest.done .bar i{background:linear-gradient(90deg,var(--green),#7ee8a8)}
 .quest.main .bar i{background:linear-gradient(90deg,var(--gold),var(--orange))}
 .qb{flex:none;width:46px;height:46px;border-radius:14px;font-size:24px;font-weight:900;
@@ -343,15 +347,33 @@ const DEFAULTS = {
   syncToken: ''
 };
 
+/* เป้าเป็น "รายสัปดาห์" (จันทร์–อาทิตย์)
+   min = ขั้นต่ำที่ต้องทำให้ได้  |  max = เป้าเยี่ยม ทำถึงแล้วได้โบนัสพิเศษ
+   types = ชนิดกิจกรรมที่นับเข้าเควสต์นี้ (เข้าพบกับเสนอราคานับรวมกัน) */
 const QUESTS = [
-  { id:'lead',   icon:'🎯', title:'ทักลูกค้าใหม่',        target:3, pts:30, main:true, sub:'ภารกิจหลัก — ห้ามพลาด' },
-  { id:'meet',   icon:'📅', title:'นัดหมาย / เข้าพบ',      target:1, pts:20, sub:'นัดใหม่หรือเข้าพบจริง' },
-  { id:'follow', icon:'🔄', title:'ตามลูกค้าเก่าที่เงียบ',  target:2, pts:10, sub:'เจ้าที่ไม่ได้ซื้อนาน' },
-  { id:'quote',  icon:'💰', title:'เสนอราคา / โชว์สินค้า',  target:1, pts:15, sub:'ส่งใบเสนอราคาหรือเดโม' }
+  { id:'lead',   icon:'🎯', title:'ทักลูกค้าใหม่',        min:7, max:20, pts:10, main:true,
+    sub:'ภารกิจหลัก', types:['lead'] },
+  { id:'visit',  icon:'📅', title:'เข้าพบ / เสนอราคา',     min:3, max:6,  pts:15,
+    sub:'สองอย่างนี้นับรวมกัน', types:['meet','quote'] },
+  { id:'follow', icon:'🔄', title:'ตามลูกค้าเก่าที่เงียบ',  min:5, max:10, pts:5,
+    sub:'เจ้าที่ไม่ได้ซื้อนาน', types:['follow'] }
 ];
-const BONUS = 25;
-const MILESTONES = [7, 30, 100];
+const BONUS = 50;        // โบนัสเมื่อครบขั้นต่ำทุกเควสต์ในสัปดาห์
+const MAX_BONUS = 50;    // โบนัสเพิ่มเมื่อถึงเป้าเยี่ยมทุกเควสต์
+const MILESTONES = [4, 12, 26];   // สัปดาห์ติดกัน ≈ 1 เดือน / 3 เดือน / ครึ่งปี
 const QMAP = Object.fromEntries(QUESTS.map(q => [q.id, q]));
+
+/* ชนิดกิจกรรม -> เควสต์ที่มันนับเข้า */
+const TYPE2QUEST = {};
+QUESTS.forEach(q => q.types.forEach(t => TYPE2QUEST[t] = q));
+
+/* ป้ายชื่อของแต่ละชนิดกิจกรรม (ใช้ตอนบันทึก/แสดงประวัติ) */
+const ACTS = {
+  lead:   { icon:'🎯', title:'ทักลูกค้าใหม่' },
+  meet:   { icon:'📅', title:'เข้าพบ / นัดหมาย' },
+  quote:  { icon:'💰', title:'เสนอราคา / โชว์สินค้า' },
+  follow: { icon:'🔄', title:'ตามลูกค้าเก่า' }
+};
 
 /* ขั้นตอนการขาย — ลูกค้า 1 เจ้าเดินผ่านขั้นพวกนี้
    open = ยังตามอยู่ / won = ปิดได้ / dead = จบแล้ว ไม่ได้ */
@@ -534,43 +556,78 @@ function confetti(){
   }
 }
 
+/* ---------------- สัปดาห์ (จันทร์–อาทิตย์) ---------------- */
+/* offset 0 = สัปดาห์นี้, 1 = สัปดาห์ที่แล้ว, ... */
+function weekStart(offset){
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - (offset||0) * 7);   // ย้อนไปวันจันทร์
+  return d;
+}
+function weekDates(offset){
+  const s = weekStart(offset), out = [];
+  for (let i=0;i<7;i++){
+    const d = new Date(s); d.setDate(s.getDate()+i);
+    if (d > new Date()) break;                    // ยังไม่ถึงวันนั้น ไม่ต้องนับ
+    out.push(d.toLocaleDateString('sv-SE'));
+  }
+  return out;
+}
+const weekLabel = offset =>
+  thDate(weekStart(offset).toLocaleDateString('sv-SE')) + ' – ' +
+  thDate(new Date(weekStart(offset).getTime() + 6*86400000).toLocaleDateString('sv-SE'));
+
 /* ---------------- คำนวณคะแนน / เควสต์ / streak ---------------- */
 function countOf(repId, date, type){
   return Store.entries().filter(e => e.rep===repId && e.date===date && e.type===type).length;
 }
-function dayPoints(repId, date){
-  let p = 0, all = true;
-  QUESTS.forEach(q => {
-    const c = Math.min(countOf(repId,date,q.id), q.target);
-    p += Math.round(q.pts * c / q.target);
-    if (c < q.target) all = false;
-  });
-  return p + (all ? BONUS : 0);
+/* จำนวนที่ทำได้ในสัปดาห์นั้น ของเควสต์หนึ่ง (รวมทุกชนิดที่นับเข้าเควสต์นี้) */
+function questCount(repId, quest, offset){
+  const days = weekDates(offset);
+  return Store.entries().filter(e =>
+    e.rep === repId && days.includes(e.date) && quest.types.includes(e.type)).length;
 }
-const cleared = (repId,date) => QUESTS.every(q => countOf(repId,date,q.id) >= q.target);
+/* จำนวนกิจกรรมชนิดหนึ่งในสัปดาห์ */
+function typeCount(repId, type, offset){
+  const days = weekDates(offset);
+  return Store.entries().filter(e =>
+    e.rep === repId && days.includes(e.date) && e.type === type).length;
+}
 
+const hitMin = (repId, offset) => QUESTS.every(q => questCount(repId,q,offset) >= q.min);
+const hitMax = (repId, offset) => QUESTS.every(q => questCount(repId,q,offset) >= q.max);
+
+/* แต้มของสัปดาห์ = แต้มต่อชิ้น + โบนัสครบขั้นต่ำ + โบนัสถึงเป้าเยี่ยม */
+function weekPoints(repId, offset){
+  let p = 0;
+  QUESTS.forEach(q => { p += questCount(repId,q,offset) * q.pts; });
+  if (hitMin(repId,offset)) p += BONUS;
+  if (hitMax(repId,offset)) p += MAX_BONUS;
+  return p;
+}
+
+/* สัปดาห์ติดกันที่ทำครบขั้นต่ำ — สัปดาห์นี้ที่ยังไม่จบ ไม่นับว่าขาด */
 function streakOf(repId){
-  // นับวันติดต่อกันที่ "ทักลูกค้าใหม่ครบ 3 เจ้า" — วันนี้ยังไม่ครบไม่ถือว่าขาด
   let n = 0;
-  for (let i=0;i<400;i++){
-    const d = dayAgo(i);
-    if (countOf(repId,d,'lead') >= QMAP.lead.target) n++;
+  for (let i=0;i<120;i++){
+    if (hitMin(repId,i)) n++;
     else if (i > 0) break;
   }
   return n;
 }
-function rangePoints(repId, days){
+
+/* รวมแต้มหลายสัปดาห์ (ใช้ในตารางอันดับ) */
+function rangePoints(repId, weeks){
   let p = 0;
-  for (let i=0;i<days;i++) p += dayPoints(repId, dayAgo(i));
+  for (let i=0;i<weeks;i++) p += weekPoints(repId,i);
   return p;
 }
-function rangeCount(repId, days, type){
+function rangeCount(repId, weeks, type){
   let n = 0;
-  for (let i=0;i<days;i++) n += countOf(repId, dayAgo(i), type);
+  for (let i=0;i<weeks;i++) n += typeCount(repId,type,i);
   return n;
 }
-const weekDays  = () => (new Date().getDay() + 6) % 7 + 1;                     // จันทร์ = ต้นสัปดาห์
-const monthDays = () => new Date().getDate();
+const weeksThisMonth = () => Math.ceil(new Date().getDate() / 7);
 
 /* =====================================================================
    Lead: ลูกค้า 1 เจ้า = entry type 'lead' หนึ่งอัน
@@ -684,11 +741,10 @@ function setLeadView(v){ LEADVIEW = v; render(); }
 
 /* ---------- TAB: เควสต์ ---------- */
 function viewQuest(){
-  const u = me(), d = today(), st = streakOf(u.id), done = cleared(u.id,d);
-  const pts = dayPoints(u.id,d);
+  const u = me(), st = streakOf(u.id);
   const b = bossStats();
-  const leadC = countOf(u.id,d,'lead');
-  const risk = st > 0 && leadC < QMAP.lead.target;
+  const pts = weekPoints(u.id,0);
+  const daysLeft = 7 - weekDates(0).length;      // เหลืออีกกี่วันในสัปดาห์นี้
 
   let h = '';
 
@@ -696,12 +752,18 @@ function viewQuest(){
   h += `<div class="card streak">
     <div class="fire ${st?'':'dead'}">🔥</div>
     <div class="grow">
-      <div class="snum">${st}<small>วันติด</small></div>
-      <div class="mut3" style="font-size:12px">ทักลูกค้าใหม่ครบ ${QMAP.lead.target} เจ้าติดต่อกัน</div>
+      <div class="snum">${st}<small>สัปดาห์ติด</small></div>
+      <div class="mut3" style="font-size:12px">ทำครบเป้าขั้นต่ำติดต่อกัน</div>
       <div class="badges">${MILESTONES.map(m =>
-        `<span class="bdg ${st>=m?'':'locked'}">${st>=m?'🏅':'🔒'} ${m} วัน</span>`).join('')}</div>
+        `<span class="bdg ${st>=m?'':'locked'}">${st>=m?'🏅':'🔒'} ${m} สัปดาห์</span>`).join('')}</div>
     </div></div>`;
-  if (risk) h += `<div class="card warn" style="margin-top:-6px">⚠️ วันนี้ยังทักไม่ครบ — เหลืออีก ${QMAP.lead.target-leadC} เจ้า ไม่งั้น streak ${st} วันขาด!</div>`;
+
+  /* เตือนเมื่อใกล้หมดสัปดาห์แต่ยังไม่ครบ */
+  const missing = QUESTS.filter(q => questCount(u.id,q,0) < q.min);
+  if (daysLeft <= 2 && missing.length){
+    h += `<div class="card warn" style="margin-top:-6px">⚠️ เหลืออีก ${daysLeft === 0 ? 'วันนี้วันสุดท้าย' : daysLeft + ' วัน'} จบสัปดาห์ —
+      ยังขาด ${missing.map(q => q.title + ' อีก ' + (q.min - questCount(u.id,q,0))).join(' · ')}</div>`;
+  }
 
   /* เตือนตัวโตถ้ายังไม่ได้เชื่อม Google Sheet — ไม่งั้นกรอกไปเท่าไหร่ก็อยู่แค่ในเครื่อง */
   if (!cfg().syncUrl && !localStorage.getItem('sq_hide_offline')){
@@ -732,25 +794,37 @@ function viewQuest(){
     </div>`;
   }
 
-  /* quests */
-  h += `<div class="qhead"><b>เควสต์วันนี้</b><span class="mut3" style="font-size:12px">${thDate(d)}</span>
+  /* quests — เป้ารายสัปดาห์ */
+  h += `<div class="qhead"><b>เป้าสัปดาห์นี้</b>
+        <span class="mut3" style="font-size:11.5px">${weekLabel(0)}${daysLeft ? ' · เหลือ ' + daysLeft + ' วัน' : ' · วันสุดท้าย'}</span>
         <span class="qpts">${pts} แต้ม</span></div>`;
+
   QUESTS.forEach(q => {
-    const c = countOf(u.id,d,q.id), ok = c >= q.target;
-    h += `<div class="quest ${ok?'done':''} ${q.main?'main':''}">
-      <div class="qi">${ok?'✅':q.icon}</div>
+    const c = questCount(u.id,q,0);
+    const okMin = c >= q.min, okMax = c >= q.max;
+    const pct = Math.min(100, c / q.max * 100);
+    const minMark = q.min / q.max * 100;
+    h += `<div class="quest ${okMin?'done':''} ${q.main?'main':''}">
+      <div class="qi">${okMax?'🏆':okMin?'✅':q.icon}</div>
       <div class="grow">
-        <div class="qt">${q.title} <span class="mut3" style="font-weight:700">${c}/${q.target}</span></div>
-        <div class="qs">${q.sub} · ${q.pts} แต้ม</div>
-        <div class="bar"><i style="width:${Math.min(100,c/q.target*100)}%"></i></div>
+        <div class="qt">${q.title}
+          <span class="mut3" style="font-weight:700">${c}<span style="font-size:11px"> / ${q.min}${okMin?'':' ขั้นต่ำ'}</span></span></div>
+        <div class="qs">${okMax ? '🏆 ถึงเป้าเยี่ยมแล้ว!' : okMin ? 'ผ่านแล้ว · เป้าเยี่ยม ' + q.max : q.sub} · ${q.pts} แต้ม/ครั้ง</div>
+        <div class="bar"><i style="width:${pct}%"></i><u style="left:${minMark}%"></u></div>
       </div>
       ${c>0 ? `<button class="minus" onclick="undoLast('${q.id}')">−</button>` : ''}
-      <button class="qb" onclick="logQuest('${q.id}')">+</button>
+      ${q.types.length > 1
+        ? `<div class="qmulti">${q.types.map(t =>
+             `<button class="qb sm" onclick="logQuest('${t}')" title="${ACTS[t].title}">${ACTS[t].icon}</button>`).join('')}</div>`
+        : `<button class="qb" onclick="logQuest('${q.types[0]}')">+</button>`}
     </div>`;
   });
-  h += `<div class="clear ${done?'on':''}">${done
-        ? `🎊 เคลียร์เดลี่แล้ว! +${BONUS} แต้มโบนัส`
-        : `เคลียร์ครบทุกเควสต์ = โบนัส ${BONUS} แต้ม`}</div>`;
+
+  const min = hitMin(u.id,0), max = hitMax(u.id,0);
+  h += `<div class="clear ${min?'on':''}">${max
+        ? `🏆 ถึงเป้าเยี่ยมทุกข้อ! +${BONUS + MAX_BONUS} แต้มโบนัส`
+        : min ? `🎊 ครบขั้นต่ำแล้ว! +${BONUS} แต้ม — ดันต่อถึงเป้าเยี่ยมรับอีก ${MAX_BONUS}`
+              : `ครบขั้นต่ำทุกข้อ = โบนัส ${BONUS} แต้ม`}</div>`;
 
   /* boss */
   h += `<div class="h2">เป้าหมายใหญ่</div>
@@ -767,10 +841,10 @@ function viewQuest(){
     </div>`;
 
   /* log วันนี้ */
-  const mine = Store.entries().filter(e => e.rep===u.id && e.date===d).sort((a,b) => b.ts-a.ts);
+  const mine = Store.entries().filter(e => e.rep===u.id && e.date===today()).sort((a,b) => b.ts-a.ts);
   h += `<div class="h2">บันทึกวันนี้ (${mine.length})</div><div class="card">`;
   h += mine.length ? mine.map(e => {
-        const q = QMAP[e.type];
+        const q = ACTS[e.type];
         const st = e.type === 'status' ? SMAP[e.stage] : null;
         // อัปเดตสถานะ: โชว์ชื่อลูกค้าที่อ้างถึง แทนที่จะโชว์คำว่า status
         const refName = e.ref ? (Store.entries().find(x => x.id === e.ref) || {}).name : '';
@@ -843,9 +917,9 @@ function viewLeads(){
 
 /* ---------- TAB: ทีม ---------- */
 function viewTeam(){
-  const days = LBRANGE === 'week' ? weekDays() : monthDays();
+  const weeks = LBRANGE === 'week' ? 1 : weeksThisMonth();
   const list = publicReps().map(r => ({
-    r, pts: rangePoints(r.id,days), leads: rangeCount(r.id,days,'lead'), st: streakOf(r.id)
+    r, pts: rangePoints(r.id,weeks), leads: rangeCount(r.id,weeks,'lead'), st: streakOf(r.id)
   })).sort((a,b) => b.pts - a.pts);
 
   let h = `<div class="h2">Leaderboard</div>
@@ -858,7 +932,7 @@ function viewTeam(){
       <div class="rk">${medal[i] || (i+1)}</div>
       <div class="av2" style="background:${x.r.color}">${x.r.name.charAt(0)}</div>
       <div class="grow"><div class="lbn">${esc(x.r.name)}</div>
-        <div class="lbs">${x.r.role} · 🎯 ${x.leads} เจ้า · 🔥 ${x.st} วัน</div></div>
+        <div class="lbs">${x.r.role} · 🎯 ${x.leads} เจ้า · 🔥 ${x.st} สัปดาห์</div></div>
       <div class="lbp"><b>${x.pts}</b><span>แต้ม</span></div>
     </div>`).join('');
 
@@ -887,15 +961,16 @@ function viewTeam(){
 }
 
 /* ---------- TAB: สรุป ---------- */
-function buildSummary(range){
-  const days = range === 'day' ? 1 : weekDays();
-  const label = range === 'day' ? 'สรุปวันนี้ ' + thDate(today())
-                                : 'สรุปสัปดาห์นี้ (' + thDate(dayAgo(days-1)) + ' – ' + thDate(today()) + ')';
+/* offset 0 = สัปดาห์นี้, 1 = สัปดาห์ที่แล้ว */
+function buildSummary(offset){
+  const label = (offset ? 'สรุปสัปดาห์ที่แล้ว' : 'สรุปสัปดาห์นี้') + ' (' + weekLabel(offset) + ')';
   const list = publicReps().map(r => ({
-    r, pts: rangePoints(r.id,days), leads: rangeCount(r.id,days,'lead'),
+    r, pts: weekPoints(r.id,offset),
     st: streakOf(r.id),
-    clr: Array.from({length:days},(_,i) => cleared(r.id,dayAgo(i))).filter(Boolean).length
+    q: QUESTS.map(q => ({ q, c: questCount(r.id,q,offset) })),
+    min: hitMin(r.id,offset), max: hitMax(r.id,offset)
   })).sort((a,b) => b.pts - a.pts);
+  list.forEach(x => x.leads = x.q[0].c);
 
   const totalLeads = list.reduce((s,x) => s + x.leads, 0);
   const b = bossStats();
@@ -903,8 +978,8 @@ function buildSummary(range){
 
   let t = `🎮 SALES QUEST — ${label}\n━━━━━━━━━━━━━━━\n`;
   list.forEach((x,i) => {
-    t += `${medal[i]||(i+1)+'.'} ${x.r.name} — ${x.pts} แต้ม\n`;
-    t += `   🎯 ลูกค้าใหม่ ${x.leads} เจ้า | 🔥 ${x.st} วันติด | ✅ เคลียร์เดลี่ ${x.clr}/${days} วัน\n`;
+    t += `${medal[i]||(i+1)+'.'} ${x.r.name} — ${x.pts} แต้ม ${x.max?'🏆':x.min?'✅':'⚠️'}\n`;
+    t += `   ${x.q.map(o => o.q.icon + ' ' + o.c + '/' + o.q.min).join(' | ')} | 🔥 ${x.st} สัปดาห์\n`;
   });
   t += `━━━━━━━━━━━━━━━\n🎯 ลูกค้าใหม่รวม ${totalLeads} เจ้า\n`;
 
@@ -924,15 +999,15 @@ function buildSummary(range){
   t += `👹 เป้า ${baht(cfg().goal.target)}: ${b.pct.toFixed(1)}% (เหลือ ${baht(b.left)})\n`;
   t += `   ต้องหาลูกค้าใหม่อีก ~${b.leadsNeeded} เจ้า\n\n`;
 
-  const zero = list.filter(x => x.leads === 0);
+  const behind = list.filter(x => !x.min);
   const top  = list[0];
-  if (zero.length) t += `⚠️ ยังไม่ทักลูกค้าใหม่เลย: ${zero.map(x => x.r.name).join(', ')}\n`;
-  if (top && top.pts > 0) t += `🏆 ผู้นำตอนนี้: ${top.name || top.r.name}\n`;
-  t += `\nลุยต่อพรุ่งนี้! ทักลูกค้าใหม่วันละ ${QMAP.lead.target} เจ้า ไม่มีข้อแม้ 💪`;
+  if (behind.length) t += `⚠️ ยังไม่ครบขั้นต่ำ: ${behind.map(x => x.r.name).join(', ')}\n`;
+  if (top && top.pts > 0) t += `🏆 ผู้นำตอนนี้: ${top.r.name}\n`;
+  t += `\nเป้าขั้นต่ำต่อสัปดาห์: ${QUESTS.map(q => q.icon + ' ' + q.title + ' ' + q.min).join(' · ')} 💪`;
   return t;
 }
 function viewSum(){
-  const d = buildSummary('day'), w = buildSummary('week');
+  const d = buildSummary(0), w = buildSummary(1);
   const u = me();
 
   /* ---- funnel ของตัวเอง: ทักไปทั้งหมด ตายตรงไหน ---- */
@@ -964,35 +1039,30 @@ function viewSum(){
     </div>`;
   }
 
-  /* ---- ประวัติ 7 วันของตัวเอง ---- */
-  h += `<div class="h2">สัปดาห์นี้คุณทำอะไรไปบ้าง</div><div class="card">`;
+  /* ---- ย้อนหลัง 8 สัปดาห์ของตัวเอง ---- */
+  h += `<div class="h2">ย้อนหลังของคุณ</div><div class="card">`;
   let any = false;
-  for (let i = 0; i < 7; i++){
-    const dt = dayAgo(i);
-    const acts = Store.entries().filter(e => e.rep === u.id && e.date === dt);
-    if (!acts.length) continue;
+  for (let i = 0; i < 8; i++){
+    const counts = QUESTS.map(q => questCount(u.id,q,i));
+    const total = counts.reduce((a,b) => a+b, 0);
+    if (!total && i > 0) continue;
     any = true;
-    const counts = {};
-    acts.forEach(e => {
-      const k = e.type === 'status' ? SMAP[e.stage].label : (QMAP[e.type] ? QMAP[e.type].title : 'ปิดการขาย');
-      const ic = e.type === 'status' ? SMAP[e.stage].icon : (QMAP[e.type] ? QMAP[e.type].icon : '💵');
-      const key = ic + ' ' + k;
-      counts[key] = (counts[key] || 0) + 1;
-    });
-    h += `<div class="log"><span class="li">${cleared(u.id,dt) ? '✅' : '·'}</span>
-      <div class="grow"><b>${thDate(dt)}${i===0?' (วันนี้)':''}</b>
-        <div class="mut3" style="font-size:11.5px">${Object.entries(counts).map(([k,n]) => k + ' ×' + n).join(' · ')}</div></div>
-      <span class="lt">${dayPoints(u.id,dt)} แต้ม</span></div>`;
+    const min = hitMin(u.id,i), max = hitMax(u.id,i);
+    h += `<div class="log"><span class="li">${max?'🏆':min?'✅':'·'}</span>
+      <div class="grow"><b>${i===0?'สัปดาห์นี้':i===1?'สัปดาห์ที่แล้ว':weekLabel(i)}</b>
+        <div class="mut3" style="font-size:11.5px">
+          ${QUESTS.map((q,j) => q.icon + ' ' + counts[j] + '/' + q.min).join(' · ')}</div></div>
+      <span class="lt">${weekPoints(u.id,i)} แต้ม</span></div>`;
   }
-  if (!any) h += '<div class="empty">ยังไม่มีกิจกรรมในสัปดาห์นี้</div>';
+  if (!any) h += '<div class="empty">ยังไม่มีกิจกรรม</div>';
   h += `</div>`;
 
   return h + `<div class="h2">สรุปอัตโนมัติ — พร้อมส่งเข้า Line</div>
-    <div class="card"><div class="row" style="margin-bottom:10px"><b>📅 ประจำวัน</b>
+    <div class="card"><div class="row" style="margin-bottom:10px"><b>📅 สัปดาห์นี้</b>
       <span class="pill mut3" style="margin-left:auto;background:rgba(255,255,255,.06)">ไม่รวมโหมดส่วนตัว</span></div>
       <pre class="sum" id="sumD">${esc(d)}</pre>
       <button class="copy" onclick="copySum('sumD')">📋 ก๊อปส่งเข้า Line</button></div>
-    <div class="card"><div class="row" style="margin-bottom:10px"><b>🗓 ประจำสัปดาห์</b></div>
+    <div class="card"><div class="row" style="margin-bottom:10px"><b>🗓 สัปดาห์ที่แล้ว</b></div>
       <pre class="sum" id="sumW">${esc(w)}</pre>
       <button class="copy" onclick="copySum('sumW')">📋 ก๊อปส่งเข้า Line</button></div>`;
 }
@@ -1116,7 +1186,7 @@ function checkPin(id){
 
 /* กดเควสต์ */
 function logQuest(type){
-  const q = QMAP[type], u = me();
+  const q = ACTS[type], u = me();
   if (type === 'lead' || type === 'meet' || type === 'follow'){
     modal(`<div class="mt">${q.icon} ${q.title}</div>
       <div class="ms">กรอกแค่ที่อยากกรอก — กดบันทึกเลยก็ได้</div>
@@ -1124,7 +1194,7 @@ function logQuest(type){
       <label>เบอร์โทร</label><input class="inp" id="fPhone" inputmode="tel" placeholder="ไม่กรอกก็ได้">
       <label>หมายเหตุ</label><input class="inp" id="fNote" placeholder="เช่น สนใจจานทราย P80">
       <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
-        <button class="btn ${q.main?'gold':''}" onclick="saveQuest('${type}')">บันทึก +1</button></div>`);
+        <button class="btn ${type==='lead'?'gold':''}" onclick="saveQuest('${type}')">บันทึก +1</button></div>`);
     setTimeout(() => { const el = $('#fName'); if (el) el.onkeydown = e => { if (e.key==='Enter') saveQuest(type); }; }, 60);
   } else {
     commit({ rep:u.id, date:today(), type });
@@ -1224,21 +1294,34 @@ function saveStage(leadId, stageId, reason){
 }
 
 function commit(e){
-  const before = cleared(e.rep, e.date);
+  const beforeMin = hitMin(e.rep, 0), beforeMax = hitMax(e.rep, 0);
+  const quest = TYPE2QUEST[e.type];
+  const beforeQ = quest ? questCount(e.rep, quest, 0) : 0;
+
   Store.add(e);
   render();
+
   if (e.type === 'deal'){ toast('ปิดได้อีก ' + Number(e.amount).toLocaleString() + ' ฿ 🎉', true); return; }
-  const q = QMAP[e.type];
-  const c = countOf(e.rep, e.date, e.type);
-  if (!before && cleared(e.rep, e.date)){ confetti(); toast('เคลียร์เดลี่! +' + BONUS + ' โบนัส 🎊', true); }
-  else if (e.type === 'lead' && c === QMAP.lead.target){ confetti(); toast('ครบ ' + QMAP.lead.target + ' เจ้าแล้ว! 🔥', true); }
-  else toast('+' + Math.round(q.pts/q.target) + ' แต้ม · ' + q.title);
+  if (!quest){ toast('บันทึกแล้ว'); return; }
+
+  const c = questCount(e.rep, quest, 0);
+  if (!beforeMax && hitMax(e.rep,0)){ confetti(); toast('ถึงเป้าเยี่ยมทุกข้อ! +' + (BONUS+MAX_BONUS) + ' โบนัส 🏆', true); }
+  else if (!beforeMin && hitMin(e.rep,0)){ confetti(); toast('ครบเป้าสัปดาห์นี้แล้ว! +' + BONUS + ' โบนัส 🎊', true); }
+  else if (beforeQ < quest.min && c >= quest.min){ confetti(); toast(quest.title + ' ครบขั้นต่ำแล้ว! ✅', true); }
+  else toast('+' + quest.pts + ' แต้ม · เหลืออีก ' + Math.max(0, quest.min - c) + ' ครบขั้นต่ำ');
 }
-function undoLast(type){
-  const u = me(), d = today();
-  const list = Store.entries().filter(e => e.rep===u.id && e.date===d && e.type===type).sort((a,b)=>b.ts-a.ts);
+
+/* ถอยรายการล่าสุดของเควสต์นั้น (นับทุกชนิดที่อยู่ในเควสต์เดียวกัน) */
+function undoLast(questId){
+  const u = me(), q = QMAP[questId];
+  const days = weekDates(0);
+  const list = Store.entries()
+    .filter(e => e.rep===u.id && days.includes(e.date) && q.types.includes(e.type))
+    .sort((a,b)=>b.ts-a.ts);
   if (!list.length) return;
-  Store.remove(list[0].id); render(); toast('ลบรายการล่าสุดแล้ว');
+  const last = list[0];
+  if (!confirm('ถอยรายการล่าสุด' + (last.name ? ' "' + last.name + '"' : '') + ' ออกจาก ' + q.title + '?')) return;
+  Store.remove(last.id); render(); toast('ถอยรายการล่าสุดแล้ว');
 }
 function delEntry(id){
   const e = Store.entries().find(x => x.id === id);
@@ -1252,7 +1335,7 @@ function editEntry(id){
   const e = Store.entries().find(x => x.id === id);
   if (!e) return;
   const isDeal = e.type === 'deal' || (e.type === 'status' && e.stage === 'won');
-  const q = QMAP[e.type], st = e.type === 'status' ? SMAP[e.stage] : null;
+  const q = ACTS[e.type], st = e.type === 'status' ? SMAP[e.stage] : null;
 
   modal(`<div class="mt">✏️ แก้ไขรายการ</div>
     <div class="ms">${st ? st.icon + ' ' + st.label : (q ? q.icon + ' ' + q.title : '💵 ปิดการขาย')} · ${thDate(e.date)}</div>
