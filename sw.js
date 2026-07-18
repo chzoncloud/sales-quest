@@ -4,7 +4,7 @@
             ไอคอน/ฟอนต์ = cache-first (ไม่ค่อยเปลี่ยน)
    หมายเหตุ: ข้อมูลเควสต์ไม่เกี่ยวกับ cache นี้ — เก็บใน localStorage + ซิงก์ Google Sheet แยกต่างหาก */
 
-const VERSION = 'sq-v6';
+const VERSION = 'sq-v7';
 const SHELL = [
   './',
   './index.html',

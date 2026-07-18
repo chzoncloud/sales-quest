@@ -139,7 +139,8 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
 
 /* ---------- เตือนยังไม่ได้เชื่อมข้อมูลส่วนกลาง ---------- */
 .offline{background:linear-gradient(150deg,#3d1230,#1a2245);border-color:rgba(255,92,122,.45)}
-.offline code{background:rgba(0,0,0,.35);padding:1px 5px;border-radius:5px;font-size:11px}
+.offline .x{background:none;color:var(--tx3);font-size:17px;padding:2px 4px;flex:none;opacity:.6;align-self:flex-start}
+.offline .x:active{opacity:1}
 
 /* ---------- ตามผลลูกค้า ---------- */
 .nudge{background:linear-gradient(150deg,#3a2f10,#1a2245);border-color:rgba(255,197,61,.35)}
@@ -699,17 +700,15 @@ function viewQuest(){
   if (risk) h += `<div class="card warn" style="margin-top:-6px">⚠️ วันนี้ยังทักไม่ครบ — เหลืออีก ${QMAP.lead.target-leadC} เจ้า ไม่งั้น streak ${st} วันขาด!</div>`;
 
   /* เตือนตัวโตถ้ายังไม่ได้เชื่อม Google Sheet — ไม่งั้นกรอกไปเท่าไหร่ก็อยู่แค่ในเครื่อง */
-  if (!cfg().syncUrl){
+  if (!cfg().syncUrl && !localStorage.getItem('sq_hide_offline')){
     h += `<div class="card offline">
       <div class="row"><span style="font-size:26px">📵</span>
         <div class="grow"><b style="font-size:15px">ยังไม่ได้เชื่อมข้อมูลส่วนกลาง</b>
           <div class="mut3" style="font-size:12.5px;margin-top:3px">
-            ตอนนี้ข้อมูลเก็บอยู่ในเครื่องนี้เครื่องเดียว — ทีมยังไม่เห็น และถ้าเปลี่ยนเครื่องข้อมูลจะไม่ตามไป
-          </div></div></div>
-      <div class="mut3" style="font-size:12px;margin-top:11px;padding-top:11px;border-top:1px solid rgba(255,255,255,.1)">
-        👉 เปิด <b>“ลิงก์ตั้งค่า”</b> ที่หัวหน้าส่งให้ในไลน์ (ลิงก์ยาวที่มี <code>#setup=</code>) ในเครื่องนี้
-        <br>ข้อมูลที่กรอกไปแล้วจะถูกส่งขึ้นให้อัตโนมัติ ไม่หายครับ
-      </div>
+            ข้อมูลเก็บอยู่ในเครื่องนี้เครื่องเดียว ทีมยังไม่เห็น (ไม่หายครับ พอเชื่อมแล้วส่งขึ้นให้เอง)
+          </div></div>
+        <button class="x" onclick="hideOfflineWarn()" title="ซ่อน">✕</button></div>
+      <button class="btn gold" style="width:100%;margin-top:12px" onclick="Setup.paste()">🔗 วางลิงก์ตั้งค่า เชื่อมเลย</button>
     </div>`;
   }
 
@@ -1029,9 +1028,9 @@ function viewSet(){
           <div class="grow"><b style="font-size:15px">ยังไม่ได้เชื่อม</b>
             <div class="mut3" style="font-size:12px;margin-top:2px">
               ข้อมูลอยู่แค่ในเครื่องนี้ ทีมยังไม่เห็น</div></div></div>
-        <div class="mut3" style="font-size:12.5px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
-          👉 <b>สแกน QR</b> หรือกด <b>ลิงก์ตั้งค่า</b> ที่หัวหน้าส่งให้ — เชื่อมให้อัตโนมัติ<br>
-          <span style="color:var(--tx3)">ไม่ต้องกรอกอะไรเองครับ</span>
+        <button class="btn gold" style="width:100%;margin-top:13px" onclick="Setup.paste()">🔗 วางลิงก์ตั้งค่า เชื่อมเลย</button>
+        <div class="mut3" style="font-size:12px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+          ก๊อปลิงก์ที่หัวหน้าส่งให้ในไลน์ แล้วกดปุ่มด้านบน — ไม่ต้องกรอกอะไรเองครับ
         </div>
       `}
     </div>
@@ -1279,6 +1278,13 @@ function saveEdit(id){
 
 function setRange(r){ LBRANGE = r; render(); }
 
+/* ซ่อนคำเตือนบนหน้าเควสต์ (แถบแดงมุมขวาบนยังอยู่ กันลืมว่ายังไม่ได้เชื่อม) */
+function hideOfflineWarn(){
+  localStorage.setItem('sq_hide_offline','1');
+  render();
+  toast('ซ่อนแล้ว — ตั้งค่าเชื่อมได้ที่แท็บตั้งค่า');
+}
+
 function copySum(id){
   const t = document.getElementById(id).textContent;
   const done = () => toast('ก๊อปแล้ว — ไปวางในกลุ่ม Line ได้เลย ✅');
@@ -1363,6 +1369,70 @@ const Setup = {
     const c = cfg();
     const id = c.syncUrl.replace(this.PREFIX,'').replace(this.SUFFIX,'');
     return location.origin + location.pathname + '#s=' + id + '.' + c.syncToken;
+  },
+
+  /* อ่านค่าเชื่อมจากข้อความ (ลิงก์เต็มก็ได้ เฉพาะส่วน hash ก็ได้) */
+  fromText(text){
+    const c = cfg();
+    let got = false;
+
+    const s = String(text).match(/[#&]s=([A-Za-z0-9\-_]+)\.([A-Za-z0-9\-_]+)/);
+    if (s){
+      c.syncUrl = this.PREFIX + s[1] + this.SUFFIX;
+      c.syncToken = s[2];
+      got = true;
+    }
+    if (!got){
+      const m = String(text).match(/setup=([A-Za-z0-9\-_]+)/);
+      if (m){
+        try{
+          const d = JSON.parse(this.dec(m[1]));
+          if (d.u) c.syncUrl = d.u;
+          if (d.t) c.syncToken = d.t;
+          got = true;
+        }catch(e){ /* ลิงก์เสีย */ }
+      }
+    }
+    if (got) Store.saveCfg(c);
+    return got;
+  },
+
+  /* วางลิงก์เข้ามาเอง — จำเป็นบน iPhone เพราะแอปบนหน้าจอโฮม
+     ใช้ที่เก็บข้อมูลคนละที่กับ Safari ค่าที่สแกน QR ใน Safari จึงไม่ข้ามมา */
+  paste(){
+    modal(`<div class="mt">🔗 วางลิงก์ตั้งค่า</div>
+      <div class="ms">ก๊อปลิงก์ที่หัวหน้าส่งให้ในไลน์ แล้ววางในช่องนี้ กดเชื่อมครั้งเดียวจบ</div>
+      <label>ลิงก์ตั้งค่า</label>
+      <input class="inp" id="pLink" placeholder="วางลิงก์ที่นี่..." autocomplete="off">
+      <button class="btn gh" style="width:100%;flex:none;margin-top:9px" onclick="Setup.readClip()">📋 ดึงจากคลิปบอร์ดให้เลย</button>
+      <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn gold" onclick="Setup.applyPasted()">เชื่อมเลย</button></div>`);
+    setTimeout(() => { const el = $('#pLink'); if (el){ el.focus();
+      el.onkeydown = e => { if (e.key === 'Enter') Setup.applyPasted(); }; } }, 60);
+  },
+
+  async readClip(){
+    try{
+      const t = await navigator.clipboard.readText();
+      if (!t){ toast('คลิปบอร์ดว่าง'); return; }
+      $('#pLink').value = t;
+      toast('ดึงมาแล้ว กดเชื่อมเลยได้');
+    }catch(e){
+      toast('ดึงอัตโนมัติไม่ได้ — กดค้างในช่องแล้ว "วาง" ครับ');
+    }
+  },
+
+  applyPasted(){
+    const v = ($('#pLink').value || '').trim();
+    if (!v){ toast('ยังไม่ได้วางลิงก์'); return; }
+    if (!this.fromText(v)){
+      toast('ลิงก์ไม่ถูกต้อง — ต้องมี #s= อยู่ข้างใน');
+      return;
+    }
+    closeModal();
+    toast('เชื่อมแล้ว กำลังซิงก์… ✅', true);
+    Sync.push(); Sync.pull();
+    render();
   },
 
   /* อ่านค่าจาก URL ตอนเปิดแอป แล้วลบ hash ทิ้งทันที ไม่ให้ค้างในประวัติเบราว์เซอร์ */
