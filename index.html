@@ -124,8 +124,8 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
 .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .5s cubic-bezier(.2,.9,.3,1)}
 /* ขีดบอกตำแหน่ง "ขั้นต่ำ" บนแถบ */
 .bar u{position:absolute;top:-3px;width:2px;height:12px;background:rgba(255,255,255,.55);border-radius:2px}
-.qmulti{display:flex;gap:6px;flex:none}
-.qb.sm{width:38px;height:38px;font-size:17px;border-radius:12px}
+.quest.month{border-color:rgba(47,214,123,.4);background:linear-gradient(160deg,#14351f,#1a2245)}
+.total{background:linear-gradient(150deg,#2a2350,#1a2245);border-color:rgba(255,197,61,.3)}
 .quest.done .bar i{background:linear-gradient(90deg,var(--green),#7ee8a8)}
 .quest.main .bar i{background:linear-gradient(90deg,var(--gold),var(--orange))}
 .qb{flex:none;width:46px;height:46px;border-radius:14px;font-size:24px;font-weight:900;
@@ -134,8 +134,10 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
 .qb:active{transform:scale(.88)}
 .quest.main .qb{background:linear-gradient(160deg,var(--gold),var(--orange));color:#3a2200;box-shadow:0 4px 14px rgba(255,160,60,.45)}
 .quest.done .qb{background:linear-gradient(160deg,var(--green),#1fa85e);color:#04240f;box-shadow:0 4px 12px rgba(47,214,123,.35)}
-.minus{position:absolute;right:70px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:9px;
+/* อยู่ในแถวปกติ ไม่ใช้ position:absolute — เดิมวางตายตัวที่ right:70px แล้วไปทับปุ่มกด */
+.minus{width:28px;height:28px;flex:none;border-radius:9px;
   background:rgba(255,255,255,.07);color:var(--tx3);font-size:16px;font-weight:900;display:grid;place-items:center;opacity:.6}
+.minus:active{opacity:1;transform:scale(.9)}
 .clear{text-align:center;padding:15px;border-radius:16px;font-weight:900;
   background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);color:var(--tx3);font-size:14px}
 .clear.on{background:linear-gradient(135deg,#1f5b38,#2a7d4d);border:1px solid var(--green);color:#fff;
@@ -339,7 +341,7 @@ const DEFAULTS = {
     { id:'korn',  name:'พี่กร',   role:'อู่ / เทคนิค', color:'#ffc53d' },
     { id:'nueng', name:'พี่หนึ่ง', role:'Trader',       color:'#4da3ff' }
   ],
-  goal: { baseline:60000000, target:100000000, conversion:20, avgDeal:300000 },
+  goal: { baseline:50000000, target:100000000, conversion:15, avgDeal:150000 },
   pin: '1234',
   // ⚠️ ห้ามใส่ URL/โทเคนตรงนี้แล้ว commit ขึ้น GitHub — repo เป็น public ใครก็อ่านได้
   // ตั้งค่าผ่าน "ลิงก์ตั้งค่า" แทน (แท็บตั้งค่า → แชร์ลิงก์ตั้งค่า) แล้วเก็บลง localStorage ของแต่ละเครื่อง
@@ -350,16 +352,27 @@ const DEFAULTS = {
 /* เป้าเป็น "รายสัปดาห์" (จันทร์–อาทิตย์)
    min = ขั้นต่ำที่ต้องทำให้ได้  |  max = เป้าเยี่ยม ทำถึงแล้วได้โบนัสพิเศษ
    types = ชนิดกิจกรรมที่นับเข้าเควสต์นี้ (เข้าพบกับเสนอราคานับรวมกัน) */
+/* เป้ารายสัปดาห์ (จันทร์–อาทิตย์) — งานที่เซลคุมเองได้ */
 const QUESTS = [
-  { id:'lead',   icon:'🎯', title:'ทักลูกค้าใหม่',        min:7, max:20, pts:10, main:true,
+  { id:'lead',   icon:'🎯', title:'ทักลูกค้าใหม่',        min:12, max:20, pts:10, main:true,
     sub:'ภารกิจหลัก', types:['lead'] },
-  { id:'visit',  icon:'📅', title:'เข้าพบ / เสนอราคา',     min:3, max:6,  pts:15,
-    sub:'สองอย่างนี้นับรวมกัน', types:['meet','quote'] },
-  { id:'follow', icon:'🔄', title:'ตามลูกค้าเก่าที่เงียบ',  min:5, max:10, pts:5,
-    sub:'เจ้าที่ไม่ได้ซื้อนาน', types:['follow'] }
+  { id:'meet',   icon:'📅', title:'เข้าพบ',               min:4,  max:8,  pts:15,
+    sub:'เข้าไปพบถึงที่', types:['meet'] },
+  { id:'follow', icon:'🔄', title:'ตามลูกค้าเก่าที่เงียบ',  min:5,  max:10, pts:5,
+    sub:'เจ้าที่ไม่ได้ซื้อนาน', types:['follow'] },
+  { id:'quote',  icon:'💰', title:'เสนอราคา',             min:3,  max:6,  pts:15,
+    sub:'ส่งใบเสนอราคา/โชว์สินค้า', types:['quote'] }
 ];
+
+/* เป้ารายเดือน — ปิดดีลใช้เวลากว่าจะสุก วัดรายสัปดาห์จะสุ่มเกินไป */
+const MONTHLY = {
+  id:'win', icon:'🏆', title:'ปิดดีลลูกค้าใหม่', min:7, max:12, pts:40,
+  sub:'นับจากลูกค้าที่มาร์ก "ปิดได้"'
+};
+
 const BONUS = 50;        // โบนัสเมื่อครบขั้นต่ำทุกเควสต์ในสัปดาห์
 const MAX_BONUS = 50;    // โบนัสเพิ่มเมื่อถึงเป้าเยี่ยมทุกเควสต์
+const MONTH_BONUS = 200; // โบนัสเมื่อปิดดีลครบเป้าเดือน
 const MILESTONES = [4, 12, 26];   // สัปดาห์ติดกัน ≈ 1 เดือน / 3 เดือน / ครึ่งปี
 const QMAP = Object.fromEntries(QUESTS.map(q => [q.id, q]));
 
@@ -646,6 +659,50 @@ function rangeCount(repId, weeks, type){
 }
 const weeksThisMonth = () => Math.ceil(new Date().getDate() / 7);
 
+/* ---------------- เดือน (สำหรับเป้าปิดดีล) ---------------- */
+function monthKey(offset){
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - (offset||0));
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+const monthLabel = offset => {
+  const [y,m] = monthKey(offset).split('-');
+  return new Date(+y, +m-1, 1).toLocaleDateString('th-TH',{month:'long', year:'numeric'});
+};
+
+/* จำนวนดีลที่ปิดได้ในเดือนนั้น — นับจากลูกค้าที่ถูกมาร์กเป็น "ปิดได้" */
+function winCount(repId, offset){
+  const mk = monthKey(offset);
+  return Store.entries().filter(e =>
+    e.rep === repId && e.type === 'status' && e.stage === 'won' &&
+    String(e.date).slice(0,7) === mk).length;
+}
+const hitMonthMin = (repId, offset) => winCount(repId, offset) >= MONTHLY.min;
+const hitMonthMax = (repId, offset) => winCount(repId, offset) >= MONTHLY.max;
+
+function monthPoints(repId, offset){
+  const n = winCount(repId, offset);
+  return n * MONTHLY.pts + (n >= MONTHLY.min ? MONTH_BONUS : 0);
+}
+
+/* ---------------- แต้มสะสม (ไม่รีเซ็ต ไว้แลกของ) ---------------- */
+/* นับตั้งแต่รายการแรกจนถึงตอนนี้ */
+function weeksSinceStart(repId){
+  const es = Store.entries().filter(e => e.rep === repId);
+  if (!es.length) return 0;
+  const first = es.reduce((m,e) => e.date < m ? e.date : m, es[0].date);
+  const diff = weekStart(0) - new Date(first + 'T00:00:00');
+  return Math.max(1, Math.floor(diff / (7*86400000)) + 1);
+}
+function totalPoints(repId){
+  let p = 0;
+  const w = Math.min(260, weeksSinceStart(repId));      // กันวนนานเกินไป
+  for (let i=0;i<w;i++) p += weekPoints(repId,i);
+  for (let i=0;i<Math.ceil(w/4)+1;i++) p += monthPoints(repId,i);
+  return p;
+}
+
 /* =====================================================================
    Lead: ลูกค้า 1 เจ้า = entry type 'lead' หนึ่งอัน
    การอัปเดตสถานะ = entry type 'status' ที่ ref กลับไปหา lead นั้น
@@ -831,10 +888,7 @@ function viewQuest(){
         <div class="bar"><i style="width:${pct}%"></i><u style="left:${minMark}%"></u></div>
       </div>
       ${c>0 ? `<button class="minus" onclick="undoLast('${q.id}')">−</button>` : ''}
-      ${q.types.length > 1
-        ? `<div class="qmulti">${q.types.map(t =>
-             `<button class="qb sm" onclick="logQuest('${t}')" title="${ACTS[t].title}">${ACTS[t].icon}</button>`).join('')}</div>`
-        : `<button class="qb" onclick="logQuest('${q.types[0]}')">+</button>`}
+      <button class="qb" onclick="logQuest('${q.types[0]}')">+</button>
     </div>`;
   });
 
@@ -843,6 +897,30 @@ function viewQuest(){
         ? `🏆 ถึงเป้าเยี่ยมทุกข้อ! +${BONUS + MAX_BONUS} แต้มโบนัส`
         : min ? `🎊 ครบขั้นต่ำแล้ว! +${BONUS} แต้ม — ดันต่อถึงเป้าเยี่ยมรับอีก ${MAX_BONUS}`
               : `ครบขั้นต่ำทุกข้อ = โบนัส ${BONUS} แต้ม`}</div>`;
+
+  /* เป้ารายเดือน: ปิดดีล */
+  const wc = winCount(u.id,0);
+  const wpct = Math.min(100, wc / MONTHLY.max * 100);
+  const wmark = MONTHLY.min / MONTHLY.max * 100;
+  h += `<div class="h2">เป้าเดือนนี้ · ${monthLabel(0)}</div>
+    <div class="quest month ${wc>=MONTHLY.min?'done':''}" style="margin-bottom:12px">
+      <div class="qi">${wc>=MONTHLY.max?'👑':wc>=MONTHLY.min?'✅':MONTHLY.icon}</div>
+      <div class="grow">
+        <div class="qt">${MONTHLY.title}
+          <span class="mut3" style="font-weight:700">${wc}<span style="font-size:11px"> / ${MONTHLY.min}${wc>=MONTHLY.min?'':' ขั้นต่ำ'}</span></span></div>
+        <div class="qs">${wc>=MONTHLY.min ? '✅ ผ่านแล้ว +' + MONTH_BONUS + ' โบนัส' : MONTHLY.sub} · ${MONTHLY.pts} แต้ม/ดีล</div>
+        <div class="bar"><i style="width:${wpct}%;background:linear-gradient(90deg,var(--green),var(--gold))"></i><u style="left:${wmark}%"></u></div>
+      </div>
+      <button class="qb" style="background:linear-gradient(160deg,var(--green),#1fa85e);color:#04240f" onclick="pickWin()">🏆</button>
+    </div>`;
+
+  /* แต้มสะสม — ไม่รีเซ็ต ไว้แลกของ */
+  h += `<div class="card total">
+    <div class="row"><span style="font-size:24px">💎</span>
+      <div class="grow"><b style="font-size:14px">แต้มสะสมทั้งหมด</b>
+        <div class="mut3" style="font-size:11.5px">เก็บไว้แลกของรางวัล ไม่มีวันหมดอายุ</div></div>
+      <b style="font-size:26px;color:var(--gold)">${totalPoints(u.id).toLocaleString()}</b></div>
+  </div>`;
 
   /* boss */
   h += `<div class="h2">เป้าหมายใหญ่</div>
@@ -937,20 +1015,27 @@ function viewLeads(){
 function viewTeam(){
   const weeks = LBRANGE === 'week' ? 1 : weeksThisMonth();
   const list = publicReps().map(r => ({
-    r, pts: rangePoints(r.id,weeks), leads: rangeCount(r.id,weeks,'lead'), st: streakOf(r.id)
+    r,
+    pts: LBRANGE === 'all' ? totalPoints(r.id)
+       : LBRANGE === 'month' ? rangePoints(r.id,weeks) + monthPoints(r.id,0)
+       : rangePoints(r.id,1),
+    leads: LBRANGE === 'all' ? Lead.all(r.id).length : rangeCount(r.id,weeks,'lead'),
+    wins: winCount(r.id,0),
+    st: streakOf(r.id)
   })).sort((a,b) => b.pts - a.pts);
 
   let h = `<div class="h2">Leaderboard</div>
     <div class="seg">
       <button class="${LBRANGE==='week'?'on':''}"  onclick="setRange('week')">สัปดาห์นี้</button>
       <button class="${LBRANGE==='month'?'on':''}" onclick="setRange('month')">เดือนนี้</button>
+      <button class="${LBRANGE==='all'?'on':''}"   onclick="setRange('all')">💎 สะสม</button>
     </div>`;
   const medal = ['🥇','🥈','🥉'];
   h += list.map((x,i) => `<div class="lb ${i===0&&x.pts>0?'p1':''}">
       <div class="rk">${medal[i] || (i+1)}</div>
       <div class="av2" style="background:${x.r.color};color:${txtOn(x.r.color)}">${x.r.name.charAt(0)}</div>
       <div class="grow"><div class="lbn">${esc(x.r.name)}</div>
-        <div class="lbs">${x.r.role} · 🎯 ${x.leads} เจ้า · 🔥 ${x.st} สัปดาห์</div></div>
+        <div class="lbs">🎯 ${x.leads} · 🏆 ${x.wins} ดีล · 🔥 ${x.st} สัปดาห์</div></div>
       <div class="lbp"><b>${x.pts}</b><span>แต้ม</span></div>
     </div>`).join('');
 
@@ -1237,6 +1322,21 @@ function saveDeal(){
   commit({ rep:me().id, date:today(), type:'deal', name:$('#fName').value.trim(), amount:amt });
   closeModal();
   confetti();
+}
+
+/* เลือกลูกค้าที่ปิดได้ — เข้าทางเดียวกับการอัปเดตสถานะ ข้อมูลจะได้ไม่แตกเป็นสองชุด */
+function pickWin(){
+  const open = Lead.open(me().id);
+  modal(`<div class="mt">🏆 ปิดดีลได้เจ้าไหน?</div>
+    <div class="ms">เลือกลูกค้าที่ปิดได้ ระบบจะบันทึกเป็น "ปิดได้" ให้อัตโนมัติ</div>
+    ${open.length
+      ? open.slice(0,20).map(l => `<button class="pick" onclick="pickStage('${l.id}','won')">
+          <span class="grow"><b style="font-size:14.5px">${esc(l.name) || 'ลูกค้าไม่ระบุชื่อ'}</b>
+            <div class="mut3" style="font-size:12px">${SMAP[Lead.stage(l.id)].icon} ${SMAP[Lead.stage(l.id)].label}</div></span>
+        </button>`).join('')
+      : `<div class="card" style="margin:0"><div class="empty">ยังไม่มีลูกค้าที่กำลังตามอยู่<br>
+          <span style="font-size:12px">ไปกดเควสต์ "ทักลูกค้าใหม่" ก่อนครับ</span></div></div>`}
+    <div class="btns"><button class="btn gh" style="flex:1" onclick="closeModal()">ปิด</button></div>`);
 }
 
 /* ---------- อัปเดตสถานะลูกค้า ---------- */
