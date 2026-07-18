@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>Sales Quest — ล่าลูกค้าใหม่</title>
+
+<!-- PWA: ติดตั้งลงหน้าจอโฮมได้เหมือนแอปจริง -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sales Quest">
+<meta name="description" content="เกมเควสต์รายวัน ล่าลูกค้าใหม่ สำหรับทีมเซล MK Industrial Supply">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b1020; --bg2:#131a33; --card:#1a2245; --card2:#222c57;
+  --line:#2f3a6e;
+  --tx:#eef2ff; --tx2:#a9b4dd; --tx3:#7683b5;
+  --gold:#ffc53d; --green:#2fd67b; --red:#ff5c7a; --blue:#4da3ff; --purple:#a97bff; --orange:#ff8c42;
+  --ok:#2fd67b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Noto Sans Thai',system-ui,sans-serif;
+  background:radial-gradient(1200px 600px at 50% -10%,#1d2757 0%,var(--bg) 55%) fixed,var(--bg);
+  color:var(--tx); min-height:100vh; font-size:15px; line-height:1.5;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 14px}
+button{font-family:inherit;cursor:pointer;border:0;color:inherit}
+input,select{font-family:inherit;font-size:15px}
+
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(11,16,32,.96),rgba(11,16,32,.72));
+  border-bottom:1px solid rgba(255,255,255,.07)}
+.hbar{display:flex;align-items:center;gap:10px;padding:10px 0}
+.brand{width:30px;height:30px;border-radius:8px;flex:none;background:#fff;object-fit:contain;
+  box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.logo{font-weight:900;font-size:17px;letter-spacing:.3px;white-space:nowrap;line-height:1.15}
+.logo span{color:var(--gold)}
+.logo small{display:block;font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.4px}
+
+/* แถบเชิญติดตั้งลงหน้าจอโฮม */
+.install{display:flex;align-items:center;gap:12px;margin:12px 0 0;padding:13px 14px;border-radius:16px;
+  background:linear-gradient(135deg,#26346b,#1a2245);border:1px solid rgba(77,163,255,.35)}
+.install img{width:38px;height:38px;border-radius:10px;background:#fff;flex:none}
+.install b{font-size:14px;display:block}
+.install button{padding:10px 16px;border-radius:12px;font-weight:900;font-size:13px;flex:none;
+  background:linear-gradient(135deg,var(--gold),var(--orange));color:#3a2200}
+.install .x{background:none;color:var(--tx3);font-size:18px;padding:0 4px;box-shadow:none}
+.who{margin-left:auto;display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid rgba(255,255,255,.09);border-radius:999px;
+  padding:6px 12px;font-weight:700;font-size:14px}
+.who .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;color:#0b1020}
+.who .cv{font-size:11px;color:var(--tx3)}
+.sync{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--tx3);white-space:nowrap}
+.sync.on{color:var(--green);border-color:rgba(47,214,123,.4);background:rgba(47,214,123,.1)}
+.sync.off{color:var(--tx3)}
+.sync.err{color:var(--red);border-color:rgba(255,92,122,.4);background:rgba(255,92,122,.1)}
+
+/* ---------- generic ---------- */
+.card{background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.28)}
+.h2{font-size:13px;font-weight:800;color:var(--tx3);letter-spacing:.6px;margin:20px 4px 10px;text-transform:uppercase}
+.mut{color:var(--tx2)} .mut3{color:var(--tx3)}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800}
+.hide{display:none!important}
+
+/* ---------- streak ---------- */
+.streak{display:flex;align-items:center;gap:14px;
+  background:linear-gradient(135deg,#3a2410,#1a2245);border-color:rgba(255,197,61,.28)}
+.fire{font-size:40px;line-height:1;filter:drop-shadow(0 0 14px rgba(255,140,66,.65))}
+.fire.dead{filter:grayscale(1);opacity:.35}
+.snum{font-size:34px;font-weight:900;line-height:1;color:var(--gold)}
+.snum small{font-size:14px;color:var(--tx2);font-weight:700;margin-left:4px}
+.badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.bdg{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;
+  background:rgba(255,197,61,.15);color:var(--gold);border:1px solid rgba(255,197,61,.3)}
+.bdg.locked{background:rgba(255,255,255,.05);color:var(--tx3);border-color:rgba(255,255,255,.08)}
+.warn{margin-top:10px;font-size:12.5px;font-weight:700;color:var(--orange);
+  background:rgba(255,140,66,.12);border:1px solid rgba(255,140,66,.3);border-radius:12px;padding:8px 11px}
+
+/* ---------- quest ---------- */
+.qhead{display:flex;align-items:baseline;gap:8px;margin:0 4px 10px}
+.qhead b{font-size:16px}
+.qpts{margin-left:auto;font-weight:900;color:var(--gold);font-size:15px}
+.quest{display:flex;align-items:center;gap:13px;padding:13px 14px;margin-bottom:10px;border-radius:16px;
+  background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid rgba(255,255,255,.08);
+  transition:.22s;position:relative;overflow:hidden}
+.quest.done{border-color:rgba(47,214,123,.45);background:linear-gradient(160deg,#14351f,#132a2a)}
+.quest.main{border-color:rgba(255,197,61,.35)}
+.quest.main.done{border-color:rgba(47,214,123,.45)}
+.qi{font-size:26px;width:34px;text-align:center;flex:none}
+.qt{font-weight:800;font-size:14.5px}
+.qs{font-size:12px;color:var(--tx3);margin-top:2px}
+.bar{height:6px;background:rgba(255,255,255,.09);border-radius:99px;margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .5s cubic-bezier(.2,.9,.3,1)}
+.quest.done .bar i{background:linear-gradient(90deg,var(--green),#7ee8a8)}
+.quest.main .bar i{background:linear-gradient(90deg,var(--gold),var(--orange))}
+.qb{flex:none;width:46px;height:46px;border-radius:14px;font-size:24px;font-weight:900;
+  background:linear-gradient(160deg,#3350a8,#2a3f85);color:#fff;display:grid;place-items:center;
+  box-shadow:0 4px 12px rgba(51,80,168,.4);transition:.15s}
+.qb:active{transform:scale(.88)}
+.quest.main .qb{background:linear-gradient(160deg,var(--gold),var(--orange));color:#3a2200;box-shadow:0 4px 14px rgba(255,160,60,.45)}
+.quest.done .qb{background:linear-gradient(160deg,var(--green),#1fa85e);color:#04240f;box-shadow:0 4px 12px rgba(47,214,123,.35)}
+.minus{position:absolute;right:70px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:9px;
+  background:rgba(255,255,255,.07);color:var(--tx3);font-size:16px;font-weight:900;display:grid;place-items:center;opacity:.6}
+.clear{text-align:center;padding:15px;border-radius:16px;font-weight:900;
+  background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.15);color:var(--tx3);font-size:14px}
+.clear.on{background:linear-gradient(135deg,#1f5b38,#2a7d4d);border:1px solid var(--green);color:#fff;
+  box-shadow:0 0 26px rgba(47,214,123,.35)}
+
+/* ---------- ตามผลลูกค้า ---------- */
+.nudge{background:linear-gradient(150deg,#3a2f10,#1a2245);border-color:rgba(255,197,61,.35)}
+.due{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;
+  border-radius:13px;margin-bottom:7px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08)}
+.due:active{transform:scale(.99)}
+.due b{font-size:14px}
+
+/* ---------- การ์ดลูกค้า ---------- */
+.lead{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:12px 13px;
+  border-radius:15px;margin-bottom:8px;
+  background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid rgba(255,255,255,.08)}
+.lead:active{transform:scale(.99)}
+.lead .dot{width:10px;height:10px;border-radius:50%;flex:none}
+.lead b{font-size:14.5px;display:block}
+.lead .meta{font-size:11.5px;color:var(--tx3);margin-top:2px}
+.lead .age{font-size:11px;flex:none;padding:3px 9px;border-radius:999px;
+  background:rgba(255,255,255,.06);color:var(--tx3);white-space:nowrap}
+.lead .age.hot{background:rgba(255,92,122,.18);color:var(--red)}
+
+/* ---------- funnel ---------- */
+.fn{display:flex;align-items:center;gap:10px;padding:8px 0}
+.fn .fi{font-size:17px;width:26px;text-align:center;flex:none}
+.fn .fl{font-size:13px;flex:none;width:118px}
+.fn .fb{flex:1;height:20px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden}
+.fn .fb i{display:block;height:100%;border-radius:6px;transition:width .6s cubic-bezier(.2,.9,.3,1)}
+.fn .fv{font-size:13px;font-weight:900;width:30px;text-align:right;flex:none}
+
+/* ---------- timeline ---------- */
+.tl{position:relative;padding-left:26px;margin-top:4px}
+.tl::before{content:'';position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:rgba(255,255,255,.12)}
+.tl .ti{position:relative;padding:7px 0;font-size:13px}
+.tl .ti::before{content:'';position:absolute;left:-22px;top:13px;width:9px;height:9px;border-radius:50%;
+  background:var(--card2);border:2px solid var(--tx3)}
+.tl .ti.now::before{background:var(--gold);border-color:var(--gold);box-shadow:0 0 10px rgba(255,197,61,.6)}
+
+/* ---------- boss ---------- */
+.boss{background:linear-gradient(150deg,#3d1230,#1a2245);border-color:rgba(255,92,122,.3)}
+.bossbar{height:26px;border-radius:99px;background:rgba(0,0,0,.4);overflow:hidden;position:relative;margin:12px 0 8px;
+  border:1px solid rgba(255,255,255,.12)}
+.bossbar i{display:block;height:100%;background:linear-gradient(90deg,#ff5c7a,#ff8c42,var(--gold));
+  transition:width .8s cubic-bezier(.2,.9,.3,1);box-shadow:0 0 18px rgba(255,140,66,.6)}
+.bossbar b{position:absolute;inset:0;display:grid;place-items:center;font-size:12.5px;font-weight:900;
+  text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.kpi{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.kpi div{background:rgba(0,0,0,.28);border-radius:12px;padding:9px 6px;text-align:center}
+.kpi b{display:block;font-size:17px;font-weight:900;color:var(--gold)}
+.kpi span{font-size:10.5px;color:var(--tx3);display:block;margin-top:2px;line-height:1.3}
+
+/* ---------- leaderboard ---------- */
+.seg{display:flex;gap:5px;background:rgba(0,0,0,.3);padding:4px;border-radius:12px;margin-bottom:12px}
+.seg button{flex:1;padding:8px;border-radius:9px;font-weight:800;font-size:13px;background:none;color:var(--tx3)}
+.seg button.on{background:var(--card2);color:var(--tx);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.lb{display:flex;align-items:center;gap:12px;padding:12px 13px;border-radius:15px;margin-bottom:9px;
+  background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid rgba(255,255,255,.08)}
+.lb.p1{border-color:rgba(255,197,61,.5);background:linear-gradient(160deg,#3a2f10,#1e2445)}
+.rk{font-size:22px;width:32px;text-align:center;flex:none;font-weight:900}
+.av2{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-weight:900;font-size:15px;color:#0b1020}
+.lbn{font-weight:800;font-size:15px}
+.lbs{font-size:11.5px;color:var(--tx3);margin-top:1px}
+.lbp{margin-left:auto;text-align:right;flex:none}
+.lbp b{font-size:19px;font-weight:900;color:var(--gold);display:block;line-height:1.1}
+.lbp span{font-size:10px;color:var(--tx3)}
+
+/* ---------- summary ---------- */
+pre.sum{white-space:pre-wrap;word-break:break-word;font-family:'Noto Sans Thai',sans-serif;font-size:13.5px;
+  background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:14px;margin:0;line-height:1.65}
+.copy{width:100%;padding:14px;border-radius:14px;font-weight:900;font-size:15px;margin-top:10px;
+  background:linear-gradient(135deg,#06c755,#04a145);color:#fff;box-shadow:0 6px 18px rgba(6,199,85,.3)}
+.copy:active{transform:scale(.98)}
+
+/* ---------- log list ---------- */
+.log{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13.5px}
+.log:last-child{border:0}
+.log .li{font-size:17px;flex:none;width:24px;text-align:center}
+.log b{font-weight:700}
+.log .lt{margin-left:auto;font-size:11px;color:var(--tx3);flex:none;white-space:nowrap}
+.del{background:none;color:var(--tx3);font-size:15px;padding:0 2px;flex:none;opacity:.5}
+
+/* ---------- nav ---------- */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:rgba(13,18,38,.97);backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.08);
+  padding-bottom:env(safe-area-inset-bottom)}
+.nb{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.nb button{padding:10px 2px 11px;background:none;color:var(--tx3);font-size:10px;font-weight:800;
+  display:flex;flex-direction:column;align-items:center;gap:3px;transition:.15s;position:relative}
+.nb .badge{position:absolute;top:5px;left:50%;margin-left:6px;min-width:17px;height:17px;padding:0 4px;
+  border-radius:99px;background:var(--red);color:#fff;font-size:10px;font-weight:900;
+  display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.nb button i{font-style:normal;font-size:21px;line-height:1}
+.nb button.on{color:var(--gold)}
+.nb button.on i{transform:translateY(-1px);filter:drop-shadow(0 0 10px rgba(255,197,61,.5))}
+
+/* ---------- modal ---------- */
+.mask{position:fixed;inset:0;z-index:100;background:rgba(4,7,18,.8);backdrop-filter:blur(5px);
+  display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.modal{width:100%;max-width:560px;background:linear-gradient(180deg,var(--card2),var(--bg2));
+  border-radius:24px 24px 0 0;padding:22px 18px calc(24px + env(safe-area-inset-bottom));
+  border-top:1px solid rgba(255,255,255,.14);animation:up .28s cubic-bezier(.2,.9,.3,1);max-height:92vh;overflow:auto}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.mt{font-size:18px;font-weight:900;margin:0 0 4px}
+.ms{font-size:13px;color:var(--tx3);margin:0 0 16px}
+label{display:block;font-size:12px;font-weight:800;color:var(--tx3);margin:12px 0 5px}
+.inp{width:100%;padding:13px 14px;border-radius:13px;background:rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.13);color:var(--tx);outline:none}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(77,163,255,.15)}
+.btns{display:flex;gap:9px;margin-top:20px}
+.btn{flex:1;padding:14px;border-radius:14px;font-weight:900;font-size:15px;
+  background:linear-gradient(135deg,var(--blue),#3a6fd8);color:#fff}
+.btn.gold{background:linear-gradient(135deg,var(--gold),var(--orange));color:#3a2200}
+.btn.gh{background:rgba(255,255,255,.07);color:var(--tx2);flex:0 0 34%}
+.btn:active{transform:scale(.98)}
+.pick{display:flex;align-items:center;gap:12px;width:100%;padding:13px;border-radius:14px;margin-bottom:8px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);text-align:left}
+.pick.on{border-color:var(--gold);background:rgba(255,197,61,.12)}
+
+/* ---------- fx ---------- */
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:200;
+  background:linear-gradient(135deg,#2fd67b,#1fa85e);color:#04240f;font-weight:900;font-size:14px;
+  padding:11px 20px;border-radius:999px;box-shadow:0 8px 26px rgba(0,0,0,.4);animation:pop .3s;white-space:nowrap}
+.toast.gold{background:linear-gradient(135deg,var(--gold),var(--orange));color:#3a2200}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-18px) scale(.85)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+.conf{position:fixed;z-index:150;pointer-events:none;font-size:18px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}
+.empty{text-align:center;color:var(--tx3);padding:26px 12px;font-size:13.5px}
+
+/* ---------- lock screen ---------- */
+.lock{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:28px 22px;text-align:center;
+  background:radial-gradient(900px 500px at 50% 20%,#1d2757,var(--bg) 70%),var(--bg)}
+.lock img{width:84px;height:84px;border-radius:22px;background:#fff;margin-bottom:20px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5)}
+.lock h1{font-size:22px;font-weight:900;margin:0 0 6px}
+.lock p{font-size:13.5px;color:var(--tx3);margin:0 0 24px;max-width:300px;line-height:1.6}
+.lock .inp{max-width:290px;text-align:center;font-size:19px;letter-spacing:3px;padding:15px}
+.lock .btn{max-width:290px;width:100%;margin-top:12px}
+.lock .err{color:var(--red);font-size:13px;font-weight:700;margin-top:12px;min-height:18px}
+.lock .link{background:none;color:var(--tx3);font-size:12px;margin-top:22px;text-decoration:underline}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="wrap hbar">
+   <img class="brand" src="icons/icon-192.png" alt="MK Industrial Supply" width="30" height="30">
+   <div class="logo">SALES <span>QUEST</span><small>MK INDUSTRIAL SUPPLY</small></div>
+   <span class="sync off" id="syncBadge">ออฟไลน์</span>
+   <button class="who" id="whoBtn"><span class="av" id="whoAv">?</span><span><span id="whoName">เลือกเซล</span><br><span class="cv" id="whoRole"></span></span></button>
+ </div>
+</header>
+
+<div class="wrap"><div class="install hide" id="installBar">
+  <img src="icons/icon-192.png" alt="">
+  <div class="grow"><b>ติดตั้งลงหน้าจอโฮม</b>
+    <div class="mut3" style="font-size:11.5px">เปิดเต็มจอ ใช้ได้ตอนไม่มีเน็ต เหมือนแอปจริง</div></div>
+  <button id="installBtn">ติดตั้ง</button>
+  <button class="x" id="installX">✕</button>
+</div></div>
+
+<main class="wrap" id="app"></main>
+
+<nav><div class="nb">
+  <button data-tab="quest" class="on"><i>⚔️</i>เควสต์</button>
+  <button data-tab="leads"><i>👥</i>ลูกค้า<span class="badge hide" id="dueBadge"></span></button>
+  <button data-tab="team"><i>🏆</i>ทีม</button>
+  <button data-tab="sum"><i>📋</i>สรุป</button>
+  <button data-tab="set"><i>⚙️</i>ตั้งค่า</button>
+</div></nav>
+
+<script>
+'use strict';
+/* =====================================================================
+   Sales Quest — data layer แยกชัด (localStorage + Google Sheet sync)
+   ===================================================================== */
+
+const DEFAULTS = {
+  reps: [
+    { id:'tum',   name:'ตั้ม',    role:'โรงงาน',       color:'#ffc53d', private:true },
+    { id:'korn',  name:'พี่กร',   role:'อู่ / เทคนิค', color:'#4da3ff' },
+    { id:'nueng', name:'พี่หนึ่ง', role:'Trader',       color:'#a97bff' }
+  ],
+  goal: { baseline:60000000, target:100000000, conversion:20, avgDeal:300000 },
+  pin: '1234',
+  // ⚠️ ห้ามใส่ URL/โทเคนตรงนี้แล้ว commit ขึ้น GitHub — repo เป็น public ใครก็อ่านได้
+  // ตั้งค่าผ่าน "ลิงก์ตั้งค่า" แทน (แท็บตั้งค่า → แชร์ลิงก์ตั้งค่า) แล้วเก็บลง localStorage ของแต่ละเครื่อง
+  syncUrl: '',
+  syncToken: ''
+};
+
+const QUESTS = [
+  { id:'lead',   icon:'🎯', title:'ทักลูกค้าใหม่',        target:3, pts:30, main:true, sub:'ภารกิจหลัก — ห้ามพลาด' },
+  { id:'meet',   icon:'📅', title:'นัดหมาย / เข้าพบ',      target:1, pts:20, sub:'นัดใหม่หรือเข้าพบจริง' },
+  { id:'follow', icon:'🔄', title:'ตามลูกค้าเก่าที่เงียบ',  target:2, pts:10, sub:'เจ้าที่ไม่ได้ซื้อนาน' },
+  { id:'quote',  icon:'💰', title:'เสนอราคา / โชว์สินค้า',  target:1, pts:15, sub:'ส่งใบเสนอราคาหรือเดโม' }
+];
+const BONUS = 25;
+const MILESTONES = [7, 30, 100];
+const QMAP = Object.fromEntries(QUESTS.map(q => [q.id, q]));
+
+/* ขั้นตอนการขาย — ลูกค้า 1 เจ้าเดินผ่านขั้นพวกนี้
+   open = ยังตามอยู่ / won = ปิดได้ / dead = จบแล้ว ไม่ได้ */
+const STAGES = [
+  { id:'new',     icon:'🆕', label:'ทักแล้ว รอผล',      color:'#4da3ff', open:true },
+  { id:'talked',  icon:'💬', label:'ได้คุยแล้ว',         color:'#4da3ff', open:true },
+  { id:'visited', icon:'🏭', label:'ได้เข้าโรงงาน',      color:'#a97bff', open:true },
+  { id:'sample',  icon:'🧪', label:'ส่งตัวอย่าง/ทดสอบ',  color:'#ff8c42', open:true },
+  { id:'quoted',  icon:'💰', label:'เสนอราคาแล้ว',       color:'#ffc53d', open:true },
+  { id:'won',     icon:'✅', label:'ปิดได้',             color:'#2fd67b', won:true  },
+  { id:'lost',    icon:'❌', label:'ไม่ได้',             color:'#ff5c7a', dead:true },
+  { id:'noreach', icon:'☎️', label:'ติดต่อไม่ได้',       color:'#7683b5', dead:true }
+];
+const SMAP = Object.fromEntries(STAGES.map(s => [s.id, s]));
+
+const LOSS_REASONS = [
+  'มีเจ้าประจำอยู่แล้ว',
+  'ราคาแพงกว่าเจ้าเดิม',
+  'ติดต่อไม่ได้เลย',
+  'ไม่ได้เจอคนตัดสินใจ',
+  'ยังไม่มีความต้องการตอนนี้',
+  'สินค้าไม่ตรงสเปค',
+  'อื่นๆ'
+];
+
+const NUDGE_DAYS = 3;   // ทักไปแล้วกี่วันถึงจะเตือนให้อัปเดต
+
+/* ---------------- Store: อนาคตเปลี่ยนไปใช้ DB จริงแก้แค่ชั้นนี้ ------------- */
+const Store = {
+  K_E:'sq_entries', K_C:'sq_config', K_U:'sq_user', K_Q:'sq_queue',
+
+  cfg(){ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(this.K_C) || '{}')); },
+  saveCfg(c){ localStorage.setItem(this.K_C, JSON.stringify(c)); },
+
+  entries(){ return JSON.parse(localStorage.getItem(this.K_E) || '[]'); },
+  setEntries(a){ localStorage.setItem(this.K_E, JSON.stringify(a)); },
+
+  user(){ return localStorage.getItem(this.K_U) || ''; },
+  setUser(u){ localStorage.setItem(this.K_U, u); },
+
+  queue(){ return JSON.parse(localStorage.getItem(this.K_Q) || '[]'); },
+  setQueue(a){ localStorage.setItem(this.K_Q, JSON.stringify(a)); },
+
+  add(e){
+    e.id = e.id || (Date.now().toString(36) + Math.random().toString(36).slice(2,7));
+    e.ts = e.ts || Date.now();
+    const a = this.entries(); a.push(e); this.setEntries(a);
+    const q = this.queue(); q.push(e); this.setQueue(q);
+    Sync.push();
+    return e;
+  },
+  remove(id){
+    this.setEntries(this.entries().filter(e => e.id !== id));
+    const e = { id, deleted:true, ts:Date.now() };
+    const q = this.queue(); q.push(e); this.setQueue(q);
+    Sync.push();
+  },
+  merge(remote){
+    const local = this.entries();
+    const seen = new Set(local.map(e => e.id));
+    let n = 0;
+    remote.forEach(r => {
+      if (r.deleted) return;
+      if (!seen.has(r.id)) { local.push(r); seen.add(r.id); n++; }
+    });
+    if (n) this.setEntries(local);
+    return n;
+  }
+};
+
+/* ---------------- Sync: Google Sheet ผ่าน Apps Script Web App --------------- */
+const Sync = {
+  busy:false, state:'off',
+
+  badge(s, txt){
+    this.state = s;
+    const el = document.getElementById('syncBadge');
+    el.className = 'sync ' + s;
+    el.textContent = txt;
+  },
+
+  async pull(silent){
+    const c = Store.cfg(), url = c.syncUrl;
+    if (!url) { this.badge('off','ออฟไลน์'); return; }
+    try{
+      this.badge('on','กำลังซิงก์…');
+      const q = 'action=list&token=' + encodeURIComponent(c.syncToken) + '&t=' + Date.now();
+      const r = await fetch(url + (url.includes('?') ? '&' : '?') + q);
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'bad response');
+      const n = Store.merge(j.entries || []);
+      this.badge('on','ซิงก์แล้ว');
+      if (!silent && n) toast('ดึงข้อมูลใหม่ ' + n + ' รายการ');
+      render();
+    }catch(err){
+      this.badge('err','ซิงก์ไม่ได้');
+      if (!silent) toast('เชื่อม Google Sheet ไม่ได้');
+    }
+  },
+
+  async push(){
+    const c = Store.cfg(), url = c.syncUrl;
+    if (!url || this.busy) return;
+    const q = Store.queue();
+    if (!q.length) return;
+    this.busy = true;
+    try{
+      const r = await fetch(url, {
+        method:'POST',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' }, // เลี่ยง CORS preflight
+        body: JSON.stringify({ action:'save', token:c.syncToken, entries:q })
+      });
+      const j = await r.json();
+      if (!j.ok) throw new Error('save failed');
+      Store.setQueue(Store.queue().slice(q.length));
+      this.badge('on','ซิงก์แล้ว');
+    }catch(err){
+      this.badge('err','ค้างส่ง ' + Store.queue().length);
+    }finally{
+      this.busy = false;
+      // มีรายการเข้าคิวระหว่างที่กำลังส่ง → ส่งต่อเลย ไม่ต้องรอรอบถัดไป
+      if (Store.queue().length) setTimeout(() => this.push(), 300);
+    }
+  }
+};
+
+/* ---------------- helpers ---------------- */
+const $  = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toLocaleDateString('sv-SE');   // YYYY-MM-DD ตามเวลาเครื่อง
+const dayAgo = n => { const d = new Date(); d.setDate(d.getDate()-n); return d.toLocaleDateString('sv-SE'); };
+const baht = n =>
+    n >= 1000000 ? (n/1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'ล.'
+  : n >= 100000  ? (n/100000).toFixed(n % 100000 === 0 ? 0 : 1) + ' แสน'
+  : n >= 10000   ? (n/10000).toFixed(n % 10000 === 0 ? 0 : 1) + ' หมื่น'
+  : n >= 1000    ? (n/1000).toFixed(n % 1000 === 0 ? 0 : 1) + ' พัน'
+  : String(Math.round(n));
+const thDate = d => new Date(d+'T00:00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short'});
+
+let TAB = 'quest', LBRANGE = 'week', LEADVIEW = 'due';
+const cfg  = () => Store.cfg();
+const reps = () => cfg().reps;
+const rep  = id => reps().find(r => r.id === id);
+const publicReps = () => reps().filter(r => !r.private);
+const me = () => rep(Store.user());
+
+function toast(msg, gold){
+  const t = document.createElement('div');
+  t.className = 'toast' + (gold ? ' gold' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.transition='.3s'; t.style.opacity='0'; t.style.transform='translate(-50%,-14px)'; }, 1500);
+  setTimeout(() => t.remove(), 1850);
+}
+function confetti(){
+  const em = ['🎉','⭐','🔥','💥','🏆','✨'];
+  for (let i=0;i<26;i++){
+    const c = document.createElement('div');
+    c.className = 'conf';
+    c.textContent = em[i % em.length];
+    c.style.left = Math.random()*100 + 'vw';
+    c.style.top = '-40px';
+    c.style.animationDuration = (1.5 + Math.random()*1.4) + 's';
+    c.style.animationDelay = (Math.random()*.35) + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3400);
+  }
+}
+
+/* ---------------- คำนวณคะแนน / เควสต์ / streak ---------------- */
+function countOf(repId, date, type){
+  return Store.entries().filter(e => e.rep===repId && e.date===date && e.type===type).length;
+}
+function dayPoints(repId, date){
+  let p = 0, all = true;
+  QUESTS.forEach(q => {
+    const c = Math.min(countOf(repId,date,q.id), q.target);
+    p += Math.round(q.pts * c / q.target);
+    if (c < q.target) all = false;
+  });
+  return p + (all ? BONUS : 0);
+}
+const cleared = (repId,date) => QUESTS.every(q => countOf(repId,date,q.id) >= q.target);
+
+function streakOf(repId){
+  // นับวันติดต่อกันที่ "ทักลูกค้าใหม่ครบ 3 เจ้า" — วันนี้ยังไม่ครบไม่ถือว่าขาด
+  let n = 0;
+  for (let i=0;i<400;i++){
+    const d = dayAgo(i);
+    if (countOf(repId,d,'lead') >= QMAP.lead.target) n++;
+    else if (i > 0) break;
+  }
+  return n;
+}
+function rangePoints(repId, days){
+  let p = 0;
+  for (let i=0;i<days;i++) p += dayPoints(repId, dayAgo(i));
+  return p;
+}
+function rangeCount(repId, days, type){
+  let n = 0;
+  for (let i=0;i<days;i++) n += countOf(repId, dayAgo(i), type);
+  return n;
+}
+const weekDays  = () => (new Date().getDay() + 6) % 7 + 1;                     // จันทร์ = ต้นสัปดาห์
+const monthDays = () => new Date().getDate();
+
+/* =====================================================================
+   Lead: ลูกค้า 1 เจ้า = entry type 'lead' หนึ่งอัน
+   การอัปเดตสถานะ = entry type 'status' ที่ ref กลับไปหา lead นั้น
+   (เก็บแบบ append-only เพื่อให้ซิงก์กับ Google Sheet ง่ายและตรวจย้อนหลังได้)
+   ===================================================================== */
+const Lead = {
+  all(repId){
+    return Store.entries()
+      .filter(e => e.type === 'lead' && (!repId || e.rep === repId))
+      .sort((a,b) => b.ts - a.ts);
+  },
+
+  /* ประวัติการอัปเดตของลูกค้าเจ้านี้ เรียงเก่า→ใหม่ */
+  history(leadId){
+    return Store.entries()
+      .filter(e => e.type === 'status' && e.ref === leadId)
+      .sort((a,b) => a.ts - b.ts);
+  },
+
+  /* สถานะล่าสุด — ยังไม่เคยอัปเดต = 'new' */
+  stage(leadId){
+    const h = this.history(leadId);
+    return h.length ? (h[h.length-1].stage || 'new') : 'new';
+  },
+
+  /* อัปเดตล่าสุดเมื่อไหร่ (ถ้าไม่เคยอัปเดต ใช้เวลาที่ทัก) */
+  lastTouch(lead){
+    const h = this.history(lead.id);
+    return h.length ? h[h.length-1].ts : lead.ts;
+  },
+
+  daysSince(lead){
+    return Math.floor((Date.now() - this.lastTouch(lead)) / 86400000);
+  },
+
+  isOpen(leadId){
+    const s = SMAP[this.stage(leadId)];
+    return !!(s && s.open);
+  },
+
+  /* เจ้าที่ยังไม่จบ และเงียบมาเกิน NUDGE_DAYS วัน — ต้องตามอัปเดต */
+  needUpdate(repId){
+    return this.all(repId)
+      .filter(l => this.isOpen(l.id) && this.daysSince(l) >= NUDGE_DAYS)
+      .sort((a,b) => this.lastTouch(a) - this.lastTouch(b));   // เงียบนานสุดขึ้นก่อน
+  },
+
+  /* เจ้าที่ยังตามอยู่ (ยังไม่จบ) */
+  open(repId){
+    return this.all(repId).filter(l => this.isOpen(l.id));
+  },
+
+  /* นับจำนวนตามขั้น — ไว้ทำ funnel */
+  funnel(repId){
+    const out = {};
+    STAGES.forEach(s => out[s.id] = 0);
+    this.all(repId).forEach(l => out[this.stage(l.id)]++);
+    return out;
+  },
+
+  /* สรุปเหตุผลที่ขายไม่ได้ */
+  lossReasons(repId){
+    const out = {};
+    this.all(repId).forEach(l => {
+      const h = this.history(l.id);
+      const last = h[h.length-1];
+      if (last && (SMAP[last.stage]||{}).dead && last.note) {
+        out[last.note] = (out[last.note] || 0) + 1;
+      }
+    });
+    return Object.entries(out).sort((a,b) => b[1] - a[1]);
+  }
+};
+
+/* ---------------- Boss bar ---------------- */
+function bossStats(){
+  const g = cfg().goal;
+  const gap = Math.max(0, g.target - g.baseline);
+  // ยอดมาได้ 2 ทาง: บันทึกยอดตรงๆ (deal) หรือมาร์กลูกค้าเป็น "ปิดได้" (status/won)
+  const won = Store.entries()
+    .filter(e => e.type === 'deal' || (e.type === 'status' && e.stage === 'won'))
+    .reduce((s,e) => s + (Number(e.amount)||0), 0);
+  const pct = gap ? Math.min(100, won/gap*100) : 0;
+  const conv = Math.max(1, Number(g.conversion)||20) / 100;
+  const per  = Math.max(1, Number(g.avgDeal)||300000);
+  const leadsNeeded = Math.ceil(Math.max(0, gap - won) / (per * conv));
+  return { gap, won, pct, leadsNeeded, left: Math.max(0, gap - won) };
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function render(){
+  const u = me();
+  $('#whoAv').textContent   = u ? u.name.charAt(0) : '?';
+  $('#whoAv').style.background = u ? u.color : '#555';
+  $('#whoName').textContent = u ? u.name : 'เลือกเซล';
+  $('#whoRole').textContent = u ? (u.private ? 'โหมดส่วนตัว 🔒' : u.role) : 'แตะเพื่อเลือก';
+  document.querySelectorAll('.nb button').forEach(b => b.classList.toggle('on', b.dataset.tab === TAB));
+
+  const badge = $('#dueBadge'), n = u ? Lead.needUpdate(u.id).length : 0;
+  badge.textContent = n > 9 ? '9+' : n;
+  badge.classList.toggle('hide', n === 0);
+
+  if (!u && TAB !== 'set'){ $('#app').innerHTML = ''; pickUser(); return; }
+  $('#app').innerHTML = ({ quest:viewQuest, leads:viewLeads, team:viewTeam, sum:viewSum, set:viewSet })[TAB]();
+}
+function goTab(t){ TAB = t; render(); window.scrollTo(0,0); }
+function setLeadView(v){ LEADVIEW = v; render(); }
+
+/* ---------- TAB: เควสต์ ---------- */
+function viewQuest(){
+  const u = me(), d = today(), st = streakOf(u.id), done = cleared(u.id,d);
+  const pts = dayPoints(u.id,d);
+  const b = bossStats();
+  const leadC = countOf(u.id,d,'lead');
+  const risk = st > 0 && leadC < QMAP.lead.target;
+
+  let h = '';
+
+  /* streak */
+  h += `<div class="card streak">
+    <div class="fire ${st?'':'dead'}">🔥</div>
+    <div class="grow">
+      <div class="snum">${st}<small>วันติด</small></div>
+      <div class="mut3" style="font-size:12px">ทักลูกค้าใหม่ครบ ${QMAP.lead.target} เจ้าติดต่อกัน</div>
+      <div class="badges">${MILESTONES.map(m =>
+        `<span class="bdg ${st>=m?'':'locked'}">${st>=m?'🏅':'🔒'} ${m} วัน</span>`).join('')}</div>
+    </div></div>`;
+  if (risk) h += `<div class="card warn" style="margin-top:-6px">⚠️ วันนี้ยังทักไม่ครบ — เหลืออีก ${QMAP.lead.target-leadC} เจ้า ไม่งั้น streak ${st} วันขาด!</div>`;
+
+  /* เตือนให้ตามผลลูกค้าที่ทักไปแล้วเงียบ */
+  const due = Lead.needUpdate(u.id);
+  if (due.length){
+    h += `<div class="card nudge">
+      <div class="row" style="margin-bottom:10px"><span style="font-size:22px">🔔</span>
+        <div class="grow"><b style="font-size:15px">ตามผล ${due.length} เจ้า</b>
+          <div class="mut3" style="font-size:12px">ทักไปแล้วเงียบเกิน ${NUDGE_DAYS} วัน — ไปถึงไหนแล้ว?</div></div></div>
+      ${due.slice(0,3).map(l => `<button class="due" onclick="updateLead('${l.id}')">
+          <span class="grow"><b>${esc(l.name) || 'ลูกค้าไม่ระบุชื่อ'}</b>
+            <div class="mut3" style="font-size:11.5px">${SMAP[Lead.stage(l.id)].icon} ${SMAP[Lead.stage(l.id)].label} · เงียบมา ${Lead.daysSince(l)} วัน</div></span>
+          <span class="pill" style="background:rgba(255,197,61,.2);color:var(--gold)">อัปเดต</span>
+        </button>`).join('')}
+      ${due.length > 3 ? `<button class="btn gh" style="width:100%;flex:none;margin-top:8px" onclick="goTab('leads')">ดูทั้งหมด ${due.length} เจ้า →</button>` : ''}
+    </div>`;
+  }
+
+  /* quests */
+  h += `<div class="qhead"><b>เควสต์วันนี้</b><span class="mut3" style="font-size:12px">${thDate(d)}</span>
+        <span class="qpts">${pts} แต้ม</span></div>`;
+  QUESTS.forEach(q => {
+    const c = countOf(u.id,d,q.id), ok = c >= q.target;
+    h += `<div class="quest ${ok?'done':''} ${q.main?'main':''}">
+      <div class="qi">${ok?'✅':q.icon}</div>
+      <div class="grow">
+        <div class="qt">${q.title} <span class="mut3" style="font-weight:700">${c}/${q.target}</span></div>
+        <div class="qs">${q.sub} · ${q.pts} แต้ม</div>
+        <div class="bar"><i style="width:${Math.min(100,c/q.target*100)}%"></i></div>
+      </div>
+      ${c>0 ? `<button class="minus" onclick="undoLast('${q.id}')">−</button>` : ''}
+      <button class="qb" onclick="logQuest('${q.id}')">+</button>
+    </div>`;
+  });
+  h += `<div class="clear ${done?'on':''}">${done
+        ? `🎊 เคลียร์เดลี่แล้ว! +${BONUS} แต้มโบนัส`
+        : `เคลียร์ครบทุกเควสต์ = โบนัส ${BONUS} แต้ม`}</div>`;
+
+  /* boss */
+  h += `<div class="h2">เป้าหมายใหญ่</div>
+    <div class="card boss">
+      <div class="row"><b style="font-size:15px">👹 ${baht(cfg().goal.baseline)} → ${baht(cfg().goal.target)}</b>
+        <span class="pill" style="margin-left:auto;background:rgba(255,92,122,.2);color:var(--red)">ต้องเพิ่ม ${baht(b.gap)}</span></div>
+      <div class="bossbar"><i style="width:${b.pct}%"></i><b>${b.pct.toFixed(1)}%</b></div>
+      <div class="kpi">
+        <div><b>${baht(b.won)}</b><span>ปิดได้แล้ว</span></div>
+        <div><b>${baht(b.left)}</b><span>เหลืออีก</span></div>
+        <div><b>${b.leadsNeeded}</b><span>ลูกค้าใหม่<br>ที่ต้องหาอีก</span></div>
+      </div>
+      <button class="btn gold" style="margin-top:12px;width:100%" onclick="logDeal()">💵 บันทึกยอดที่ปิดได้</button>
+    </div>`;
+
+  /* log วันนี้ */
+  const mine = Store.entries().filter(e => e.rep===u.id && e.date===d).sort((a,b) => b.ts-a.ts);
+  h += `<div class="h2">บันทึกวันนี้ (${mine.length})</div><div class="card">`;
+  h += mine.length ? mine.map(e => {
+        const q = QMAP[e.type];
+        const st = e.type === 'status' ? SMAP[e.stage] : null;
+        // อัปเดตสถานะ: โชว์ชื่อลูกค้าที่อ้างถึง แทนที่จะโชว์คำว่า status
+        const refName = e.ref ? (Store.entries().find(x => x.id === e.ref) || {}).name : '';
+        const icon  = st ? st.icon : e.type === 'deal' ? '💵' : q ? q.icon : '•';
+        const title = st ? (refName || 'ลูกค้า') + ' → ' + st.label
+                    : e.name || (e.type === 'deal' ? 'ปิดการขาย' : q ? q.title : e.type);
+        return `<div class="log"><span class="li">${icon}</span>
+          <div class="grow"><b>${esc(title)}</b>
+          ${e.amount?` <span style="color:var(--gold);font-weight:800">${Number(e.amount).toLocaleString()} ฿</span>`:''}
+          ${e.phone?`<div class="mut3" style="font-size:11.5px">📞 ${esc(e.phone)}</div>`:''}
+          ${e.note ?`<div class="mut3" style="font-size:11.5px">${esc(e.note)}</div>`:''}</div>
+          <span class="lt">${new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>
+          <button class="del" onclick="delEntry('${e.id}')">🗑</button></div>`;
+      }).join('') : '<div class="empty">ยังไม่มีบันทึกวันนี้ — กด + ที่เควสต์ด้านบนได้เลย</div>';
+  h += `</div>`;
+  return h;
+}
+
+/* ---------- TAB: ลูกค้า ---------- */
+function leadCard(l, showRep){
+  const st = SMAP[Lead.stage(l.id)];
+  const d = Lead.daysSince(l);
+  const hot = st.open && d >= NUDGE_DAYS;
+  return `<button class="lead" onclick="updateLead('${l.id}')">
+    <span class="dot" style="background:${st.color}"></span>
+    <span class="grow"><b>${esc(l.name) || 'ลูกค้าไม่ระบุชื่อ'}</b>
+      <span class="meta">${st.icon} ${st.label}${showRep ? ' · ' + esc((rep(l.rep)||{}).name || l.rep) : ''}${l.phone ? ' · 📞 ' + esc(l.phone) : ''}</span></span>
+    <span class="age ${hot?'hot':''}">${d === 0 ? 'วันนี้' : d + ' วัน'}</span>
+  </button>`;
+}
+
+function viewLeads(){
+  const u = me();
+  const due = Lead.needUpdate(u.id);
+  const open = Lead.open(u.id);
+  const all = Lead.all(u.id);
+
+  let h = `<div class="seg">
+    <button class="${LEADVIEW==='due'?'on':''}"  onclick="setLeadView('due')">ต้องอัปเดต${due.length?' ('+due.length+')':''}</button>
+    <button class="${LEADVIEW==='open'?'on':''}" onclick="setLeadView('open')">กำลังตาม (${open.length})</button>
+    <button class="${LEADVIEW==='all'?'on':''}"  onclick="setLeadView('all')">ทั้งหมด (${all.length})</button>
+  </div>`;
+
+  if (LEADVIEW === 'due'){
+    h += due.length
+      ? `<div class="mut3" style="font-size:12.5px;margin:0 4px 10px">ทักไปแล้วเงียบเกิน ${NUDGE_DAYS} วัน — แตะเพื่ออัปเดตว่าไปถึงไหน</div>`
+        + due.map(l => leadCard(l)).join('')
+      : `<div class="card"><div class="empty">🎉 ไม่มีเจ้าไหนค้าง<br><span style="font-size:12px">ตามผลครบหมดแล้ว</span></div></div>`;
+  }
+  else if (LEADVIEW === 'open'){
+    h += open.length
+      ? open.sort((a,b) => Lead.lastTouch(b) - Lead.lastTouch(a)).map(l => leadCard(l)).join('')
+      : `<div class="card"><div class="empty">ยังไม่มีเจ้าที่กำลังตามอยู่</div></div>`;
+  }
+  else {
+    if (!all.length) h += `<div class="card"><div class="empty">ยังไม่มีลูกค้า — ไปกดเควสต์ "ทักลูกค้าใหม่" ก่อน</div></div>`;
+    else {
+      // จัดกลุ่มตามวันที่ทัก = ประวัติว่าแต่ละวันทำอะไรไปบ้าง
+      const byDate = {};
+      all.forEach(l => (byDate[l.date] = byDate[l.date] || []).push(l));
+      Object.keys(byDate).sort().reverse().forEach(d => {
+        h += `<div class="h2" style="margin:16px 4px 8px">${thDate(d)} · ${byDate[d].length} เจ้า</div>`;
+        h += byDate[d].map(l => leadCard(l)).join('');
+      });
+    }
+  }
+  return h;
+}
+
+/* ---------- TAB: ทีม ---------- */
+function viewTeam(){
+  const days = LBRANGE === 'week' ? weekDays() : monthDays();
+  const list = publicReps().map(r => ({
+    r, pts: rangePoints(r.id,days), leads: rangeCount(r.id,days,'lead'), st: streakOf(r.id)
+  })).sort((a,b) => b.pts - a.pts);
+
+  let h = `<div class="h2">Leaderboard</div>
+    <div class="seg">
+      <button class="${LBRANGE==='week'?'on':''}"  onclick="setRange('week')">สัปดาห์นี้</button>
+      <button class="${LBRANGE==='month'?'on':''}" onclick="setRange('month')">เดือนนี้</button>
+    </div>`;
+  const medal = ['🥇','🥈','🥉'];
+  h += list.map((x,i) => `<div class="lb ${i===0&&x.pts>0?'p1':''}">
+      <div class="rk">${medal[i] || (i+1)}</div>
+      <div class="av2" style="background:${x.r.color}">${x.r.name.charAt(0)}</div>
+      <div class="grow"><div class="lbn">${esc(x.r.name)}</div>
+        <div class="lbs">${x.r.role} · 🎯 ${x.leads} เจ้า · 🔥 ${x.st} วัน</div></div>
+      <div class="lbp"><b>${x.pts}</b><span>แต้ม</span></div>
+    </div>`).join('');
+
+  if (me() && me().private)
+    h += `<div class="card" style="margin-top:14px;border-color:rgba(255,197,61,.3)">
+      <div class="row"><span style="font-size:20px">🔒</span><div class="grow">
+        <b style="font-size:14px">คุณอยู่ในโหมดส่วนตัว</b>
+        <div class="mut3" style="font-size:12px;margin-top:3px">สถิติของ ${esc(me().name)} ไม่ถูกนับใน Leaderboard และไม่โผล่ในสรุปที่ส่งเข้า Line</div>
+      </div></div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)"
+        class="row"><span class="mut3" style="font-size:12.5px">แต้ม${LBRANGE==='week'?'สัปดาห์':'เดือน'}นี้ของคุณ</span>
+        <b style="margin-left:auto;color:var(--gold);font-size:18px">${rangePoints(me().id,days)}</b></div>
+    </div>`;
+
+  /* ลูกค้าใหม่ล่าสุดของทีม */
+  const recent = Store.entries()
+    .filter(e => e.type==='lead' && e.name && !(rep(e.rep)||{}).private)
+    .sort((a,b) => b.ts-a.ts).slice(0,15);
+  h += `<div class="h2">ลูกค้าใหม่ล่าสุดของทีม</div><div class="card">`;
+  h += recent.length ? recent.map(e => `<div class="log"><span class="li">🎯</span>
+      <div class="grow"><b>${esc(e.name)}</b>
+        <div class="mut3" style="font-size:11.5px">${esc((rep(e.rep)||{}).name||e.rep)}${e.phone?' · 📞 '+esc(e.phone):''}</div></div>
+      <span class="lt">${thDate(e.date)}</span></div>`).join('')
+    : '<div class="empty">ยังไม่มีข้อมูล</div>';
+  return h + `</div>`;
+}
+
+/* ---------- TAB: สรุป ---------- */
+function buildSummary(range){
+  const days = range === 'day' ? 1 : weekDays();
+  const label = range === 'day' ? 'สรุปวันนี้ ' + thDate(today())
+                                : 'สรุปสัปดาห์นี้ (' + thDate(dayAgo(days-1)) + ' – ' + thDate(today()) + ')';
+  const list = publicReps().map(r => ({
+    r, pts: rangePoints(r.id,days), leads: rangeCount(r.id,days,'lead'),
+    st: streakOf(r.id),
+    clr: Array.from({length:days},(_,i) => cleared(r.id,dayAgo(i))).filter(Boolean).length
+  })).sort((a,b) => b.pts - a.pts);
+
+  const totalLeads = list.reduce((s,x) => s + x.leads, 0);
+  const b = bossStats();
+  const medal = ['🥇','🥈','🥉'];
+
+  let t = `🎮 SALES QUEST — ${label}\n━━━━━━━━━━━━━━━\n`;
+  list.forEach((x,i) => {
+    t += `${medal[i]||(i+1)+'.'} ${x.r.name} — ${x.pts} แต้ม\n`;
+    t += `   🎯 ลูกค้าใหม่ ${x.leads} เจ้า | 🔥 ${x.st} วันติด | ✅ เคลียร์เดลี่ ${x.clr}/${days} วัน\n`;
+  });
+  t += `━━━━━━━━━━━━━━━\n🎯 ลูกค้าใหม่รวม ${totalLeads} เจ้า\n`;
+
+  // สถานะรวมของทีม (ไม่รวมโหมดส่วนตัว)
+  const tf = {};
+  STAGES.forEach(s => tf[s.id] = 0);
+  publicReps().forEach(r => {
+    const f = Lead.funnel(r.id);
+    STAGES.forEach(s => tf[s.id] += f[s.id]);
+  });
+  const active = STAGES.filter(s => tf[s.id] > 0);
+  if (active.length) t += `📊 ${active.map(s => s.icon + ' ' + s.label + ' ' + tf[s.id]).join(' | ')}\n`;
+
+  const dueAll = publicReps().reduce((n,r) => n + Lead.needUpdate(r.id).length, 0);
+  if (dueAll) t += `🔔 ค้างตามผล ${dueAll} เจ้า\n`;
+
+  t += `👹 เป้า ${baht(cfg().goal.target)}: ${b.pct.toFixed(1)}% (เหลือ ${baht(b.left)})\n`;
+  t += `   ต้องหาลูกค้าใหม่อีก ~${b.leadsNeeded} เจ้า\n\n`;
+
+  const zero = list.filter(x => x.leads === 0);
+  const top  = list[0];
+  if (zero.length) t += `⚠️ ยังไม่ทักลูกค้าใหม่เลย: ${zero.map(x => x.r.name).join(', ')}\n`;
+  if (top && top.pts > 0) t += `🏆 ผู้นำตอนนี้: ${top.name || top.r.name}\n`;
+  t += `\nลุยต่อพรุ่งนี้! ทักลูกค้าใหม่วันละ ${QMAP.lead.target} เจ้า ไม่มีข้อแม้ 💪`;
+  return t;
+}
+function viewSum(){
+  const d = buildSummary('day'), w = buildSummary('week');
+  const u = me();
+
+  /* ---- funnel ของตัวเอง: ทักไปทั้งหมด ตายตรงไหน ---- */
+  const fn = Lead.funnel(u.id);
+  const total = Lead.all(u.id).length;
+  const maxV = Math.max(1, ...Object.values(fn));
+  let h = `<div class="h2">ลูกค้าของคุณไปถึงไหนบ้าง (${total} เจ้า)</div><div class="card">`;
+  h += total
+    ? STAGES.map(s => `<div class="fn">
+        <span class="fi">${s.icon}</span>
+        <span class="fl">${s.label}</span>
+        <span class="fb"><i style="width:${fn[s.id]/maxV*100}%;background:${s.color}"></i></span>
+        <span class="fv" style="color:${fn[s.id]?s.color:'var(--tx3)'}">${fn[s.id]}</span>
+      </div>`).join('')
+    : '<div class="empty">ยังไม่มีข้อมูล</div>';
+  h += `</div>`;
+
+  /* ---- เหตุผลที่ขายไม่ได้ ---- */
+  const lr = Lead.lossReasons(u.id);
+  if (lr.length){
+    const lmax = Math.max(...lr.map(x => x[1]));
+    h += `<div class="h2">ทำไมถึงขายไม่ได้</div><div class="card">
+      ${lr.map(([r,n]) => `<div class="fn">
+        <span class="fl" style="width:150px;font-size:12.5px">${esc(r)}</span>
+        <span class="fb"><i style="width:${n/lmax*100}%;background:var(--red)"></i></span>
+        <span class="fv">${n}</span></div>`).join('')}
+      <div class="mut3" style="font-size:11.5px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+        เหตุผลที่เจอบ่อยสุดคือจุดที่ควรแก้ก่อน</div>
+    </div>`;
+  }
+
+  /* ---- ประวัติ 7 วันของตัวเอง ---- */
+  h += `<div class="h2">สัปดาห์นี้คุณทำอะไรไปบ้าง</div><div class="card">`;
+  let any = false;
+  for (let i = 0; i < 7; i++){
+    const dt = dayAgo(i);
+    const acts = Store.entries().filter(e => e.rep === u.id && e.date === dt);
+    if (!acts.length) continue;
+    any = true;
+    const counts = {};
+    acts.forEach(e => {
+      const k = e.type === 'status' ? SMAP[e.stage].label : (QMAP[e.type] ? QMAP[e.type].title : 'ปิดการขาย');
+      const ic = e.type === 'status' ? SMAP[e.stage].icon : (QMAP[e.type] ? QMAP[e.type].icon : '💵');
+      const key = ic + ' ' + k;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    h += `<div class="log"><span class="li">${cleared(u.id,dt) ? '✅' : '·'}</span>
+      <div class="grow"><b>${thDate(dt)}${i===0?' (วันนี้)':''}</b>
+        <div class="mut3" style="font-size:11.5px">${Object.entries(counts).map(([k,n]) => k + ' ×' + n).join(' · ')}</div></div>
+      <span class="lt">${dayPoints(u.id,dt)} แต้ม</span></div>`;
+  }
+  if (!any) h += '<div class="empty">ยังไม่มีกิจกรรมในสัปดาห์นี้</div>';
+  h += `</div>`;
+
+  return h + `<div class="h2">สรุปอัตโนมัติ — พร้อมส่งเข้า Line</div>
+    <div class="card"><div class="row" style="margin-bottom:10px"><b>📅 ประจำวัน</b>
+      <span class="pill mut3" style="margin-left:auto;background:rgba(255,255,255,.06)">ไม่รวมโหมดส่วนตัว</span></div>
+      <pre class="sum" id="sumD">${esc(d)}</pre>
+      <button class="copy" onclick="copySum('sumD')">📋 ก๊อปส่งเข้า Line</button></div>
+    <div class="card"><div class="row" style="margin-bottom:10px"><b>🗓 ประจำสัปดาห์</b></div>
+      <pre class="sum" id="sumW">${esc(w)}</pre>
+      <button class="copy" onclick="copySum('sumW')">📋 ก๊อปส่งเข้า Line</button></div>`;
+}
+
+/* ---------- TAB: ตั้งค่า ---------- */
+function viewSet(){
+  const c = cfg();
+  return `<div class="h2">โปรไฟล์</div>
+    <div class="card">${reps().map(r => `<div class="log">
+        <div class="av2" style="background:${r.color};width:32px;height:32px;font-size:13px">${r.name.charAt(0)}</div>
+        <div class="grow"><b>${esc(r.name)}</b><div class="mut3" style="font-size:11.5px">${esc(r.role)}${r.private?' · 🔒 ส่วนตัว (ไม่นับรวม)':''}</div></div>
+      </div>`).join('')}
+      <button class="btn gh" style="width:100%;flex:none;margin-top:12px" onclick="pickUser()">สลับโปรไฟล์</button></div>
+
+    <div class="h2">เป้าหมายใหญ่ (Boss Bar)</div>
+    <div class="card">
+      <label>ยอดปัจจุบัน (บาท/ปี)</label><input class="inp" id="sBase" type="number" value="${c.goal.baseline}">
+      <label>เป้าหมาย (บาท/ปี)</label><input class="inp" id="sTgt" type="number" value="${c.goal.target}">
+      <label>อัตราปิดการขาย (%) — ทัก 10 เจ้า ปิดได้กี่เจ้า</label><input class="inp" id="sConv" type="number" value="${c.goal.conversion}">
+      <label>ยอดเฉลี่ยต่อลูกค้าใหม่ 1 เจ้า (บาท/ปี)</label><input class="inp" id="sAvg" type="number" value="${c.goal.avgDeal}">
+      <button class="btn" style="width:100%;margin-top:16px" onclick="saveGoal()">บันทึกเป้าหมาย</button>
+    </div>
+
+    <div class="h2">เชื่อม Google Sheet (ข้อมูลส่วนกลาง)</div>
+    <div class="card">
+      <div class="mut3" style="font-size:12.5px;margin-bottom:4px">วาง URL ของ Apps Script Web App (ดูวิธีทำใน README) — เว้นว่างไว้ = ใช้เฉพาะในเครื่องนี้</div>
+      <label>Web App URL</label><input class="inp" id="sUrl" value="${esc(c.syncUrl)}" placeholder="https://script.google.com/macros/s/.../exec">
+      <label>โทเคนลับ (ต้องตรงกับ TOKEN ใน Code.gs)</label><input class="inp" id="sTok" value="${esc(c.syncToken)}" placeholder="วางโทเคนที่นี่">
+      <label>PIN โหมดส่วนตัว</label><input class="inp" id="sPin" value="${esc(c.pin)}" inputmode="numeric">
+      <div class="btns"><button class="btn" onclick="saveSync()">บันทึก + ซิงก์</button>
+        <button class="btn gh" onclick="Sync.pull()">ดึงข้อมูล</button></div>
+      <button class="btn gold" style="width:100%;margin-top:9px" onclick="Setup.share()">🔗 แชร์ลิงก์ตั้งค่าให้เซล</button>
+      <div class="mut3" style="font-size:11.5px;margin-top:12px">
+        สถานะ: ${Sync.state==='on'?'✅ เชื่อมแล้ว':Sync.state==='err'?'⚠️ เชื่อมไม่ได้':'⚪ ยังไม่เชื่อม'}
+        · ค้างส่ง ${Store.queue().length} รายการ · ทั้งหมด ${Store.entries().length} รายการ
+      </div>
+    </div>
+
+    <div class="h2">ความปลอดภัย</div>
+    <div class="card">
+      <div class="mut3" style="font-size:12.5px;margin-bottom:12px">
+        แอปล็อกด้วยรหัสผ่าน ใส่ครั้งเดียวต่อเครื่อง — กันคนที่ได้ลิงก์ไปเปิดดูข้อมูลลูกค้าและยอดขาย
+      </div>
+      <button class="btn gh" style="width:100%;flex:none;margin-bottom:9px" onclick="Lock.change()">🔐 เปลี่ยนรหัสผ่าน</button>
+      <button class="btn gh" style="width:100%;flex:none" onclick="Lock.lockNow()">🔒 ล็อกเครื่องนี้ตอนนี้</button>
+    </div>
+
+    <div class="h2">ข้อมูล</div>
+    <div class="card">
+      <button class="btn gh" style="width:100%;flex:none;margin-bottom:9px" onclick="exportCsv()">⬇️ ดาวน์โหลด CSV</button>
+      <button class="btn gh" style="width:100%;flex:none;color:var(--red)" onclick="resetAll()">🗑 ล้างข้อมูลในเครื่องนี้</button>
+    </div>`;
+}
+
+/* =====================================================================
+   ACTIONS
+   ===================================================================== */
+function modal(html){
+  const m = document.createElement('div');
+  m.className = 'mask';
+  m.innerHTML = `<div class="modal">${html}</div>`;
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+  document.body.appendChild(m);
+  return m;
+}
+const closeModal = () => document.querySelectorAll('.mask').forEach(m => m.remove());
+
+/* เลือก / สลับโปรไฟล์ */
+function pickUser(){
+  closeModal();
+  const m = modal(`<div class="mt">คุณคือใคร?</div><div class="ms">เลือกโปรไฟล์เซลของคุณ</div>
+    ${reps().map(r => `<button class="pick" onclick="chooseUser('${r.id}')">
+      <span class="av2" style="background:${r.color}">${r.name.charAt(0)}</span>
+      <span class="grow"><b style="font-size:15px">${esc(r.name)}</b>
+        <div class="mut3" style="font-size:12px">${esc(r.role)}${r.private?' · 🔒 ต้องใส่ PIN':''}</div></span>
+    </button>`).join('')}`);
+  return m;
+}
+function chooseUser(id){
+  const r = rep(id);
+  if (r.private){
+    closeModal();
+    modal(`<div class="mt">🔒 โหมดส่วนตัว</div>
+      <div class="ms">สถิติของ ${esc(r.name)} จะไม่ถูกนับใน Leaderboard และไม่โผล่ในสรุปที่ส่งเข้า Line</div>
+      <label>ใส่ PIN</label><input class="inp" id="pinIn" type="password" inputmode="numeric" autofocus>
+      <div class="btns"><button class="btn gh" onclick="pickUser()">ย้อนกลับ</button>
+        <button class="btn gold" onclick="checkPin('${id}')">เข้าสู่โหมด</button></div>`);
+    setTimeout(() => { const el = $('#pinIn'); if (el){ el.focus();
+      el.onkeydown = e => { if (e.key === 'Enter') checkPin(id); }; } }, 60);
+    return;
+  }
+  Store.setUser(id); closeModal(); render(); toast('สวัสดี ' + r.name + ' 👋');
+}
+function checkPin(id){
+  if ($('#pinIn').value.trim() !== String(cfg().pin)) { toast('PIN ไม่ถูก'); return; }
+  Store.setUser(id); closeModal(); render(); toast('เข้าโหมดส่วนตัวแล้ว 🔒', true);
+}
+
+/* กดเควสต์ */
+function logQuest(type){
+  const q = QMAP[type], u = me();
+  if (type === 'lead' || type === 'meet' || type === 'follow'){
+    modal(`<div class="mt">${q.icon} ${q.title}</div>
+      <div class="ms">กรอกแค่ที่อยากกรอก — กดบันทึกเลยก็ได้</div>
+      <label>ชื่อลูกค้า / โรงงาน</label><input class="inp" id="fName" placeholder="ไม่กรอกก็ได้" autofocus>
+      <label>เบอร์โทร</label><input class="inp" id="fPhone" inputmode="tel" placeholder="ไม่กรอกก็ได้">
+      <label>หมายเหตุ</label><input class="inp" id="fNote" placeholder="เช่น สนใจจานทราย P80">
+      <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn ${q.main?'gold':''}" onclick="saveQuest('${type}')">บันทึก +1</button></div>`);
+    setTimeout(() => { const el = $('#fName'); if (el) el.onkeydown = e => { if (e.key==='Enter') saveQuest(type); }; }, 60);
+  } else {
+    commit({ rep:u.id, date:today(), type });
+  }
+}
+function saveQuest(type){
+  commit({ rep:me().id, date:today(), type,
+    name:$('#fName').value.trim(), phone:$('#fPhone').value.trim(), note:$('#fNote').value.trim() });
+  closeModal();
+}
+function logDeal(){
+  modal(`<div class="mt">💵 บันทึกยอดที่ปิดได้</div>
+    <div class="ms">ยอดนี้จะไปเดิน Boss Bar ของทีม</div>
+    <label>ชื่อลูกค้า</label><input class="inp" id="fName" autofocus>
+    <label>ยอด (บาท/ปี)</label><input class="inp" id="fAmt" type="number" inputmode="numeric" placeholder="300000">
+    <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn gold" onclick="saveDeal()">บันทึกยอด</button></div>`);
+}
+function saveDeal(){
+  const amt = Number($('#fAmt').value);
+  if (!amt || amt <= 0) { toast('ใส่ยอดด้วยครับ'); return; }
+  commit({ rep:me().id, date:today(), type:'deal', name:$('#fName').value.trim(), amount:amt });
+  closeModal();
+  confetti();
+}
+
+/* ---------- อัปเดตสถานะลูกค้า ---------- */
+function updateLead(leadId){
+  const lead = Store.entries().find(e => e.id === leadId);
+  if (!lead) return;
+  const cur = Lead.stage(leadId);
+  const hist = Lead.history(leadId);
+
+  modal(`<div class="mt">${esc(lead.name) || 'ลูกค้าไม่ระบุชื่อ'}</div>
+    <div class="ms">ทักไปเมื่อ ${thDate(lead.date)}${lead.phone ? ' · 📞 ' + esc(lead.phone) : ''}
+      ${Lead.daysSince(lead) ? ' · เงียบมา ' + Lead.daysSince(lead) + ' วัน' : ''}</div>
+
+    ${hist.length ? `<div class="card" style="margin:0 0 16px;padding:12px 14px">
+      <div class="mut3" style="font-size:11.5px;font-weight:800;margin-bottom:2px">ประวัติ</div>
+      <div class="tl">
+        <div class="ti">🆕 ทักครั้งแรก <span class="mut3">${thDate(lead.date)}</span></div>
+        ${hist.map((s,i) => `<div class="ti ${i===hist.length-1?'now':''}">
+          ${SMAP[s.stage].icon} ${SMAP[s.stage].label}
+          ${s.note ? `<span class="mut3">— ${esc(s.note)}</span>` : ''}
+          ${s.amount ? `<span style="color:var(--gold);font-weight:800">${Number(s.amount).toLocaleString()} ฿</span>` : ''}
+          <span class="mut3">${thDate(s.date)}</span></div>`).join('')}
+      </div></div>` : ''}
+
+    <div style="font-size:13px;font-weight:800;color:var(--tx3);margin-bottom:8px">ตอนนี้ไปถึงขั้นไหนแล้ว?</div>
+    ${STAGES.filter(s => s.id !== 'new').map(s => `<button class="pick ${cur===s.id?'on':''}" onclick="pickStage('${leadId}','${s.id}')">
+        <span style="font-size:20px;width:26px;text-align:center">${s.icon}</span>
+        <span class="grow"><b style="font-size:14.5px">${s.label}</b></span>
+        ${cur===s.id ? '<span class="pill" style="background:rgba(255,197,61,.2);color:var(--gold)">ตอนนี้</span>' : ''}
+      </button>`).join('')}
+    <div class="btns"><button class="btn gh" style="flex:1" onclick="closeModal()">ปิด</button></div>`);
+}
+
+function pickStage(leadId, stageId){
+  const s = SMAP[stageId];
+
+  if (s.won){
+    modal(`<div class="mt">✅ ปิดได้แล้ว!</div>
+      <div class="ms">ใส่ยอดเพื่อให้ไปเดิน Boss Bar ของทีม</div>
+      <label>ยอดที่คาดว่าจะได้ (บาท/ปี)</label>
+      <input class="inp" id="sAmt" type="number" inputmode="numeric" placeholder="300000" autofocus>
+      <div class="btns"><button class="btn gh" onclick="updateLead('${leadId}')">ย้อนกลับ</button>
+        <button class="btn gold" onclick="saveStage('${leadId}','won')">บันทึก</button></div>`);
+    return;
+  }
+
+  if (s.dead){
+    modal(`<div class="mt">${s.icon} ${s.label}</div>
+      <div class="ms">เพราะอะไรครับ? ข้อมูลนี้จะบอกเราว่าควรแก้อะไร</div>
+      ${LOSS_REASONS.map(r => `<button class="pick" onclick="saveStage('${leadId}','${stageId}','${esc(r)}')">
+          <span class="grow"><b style="font-size:14px">${r}</b></span></button>`).join('')}
+      <div class="btns"><button class="btn gh" style="flex:1" onclick="updateLead('${leadId}')">ย้อนกลับ</button></div>`);
+    return;
+  }
+
+  saveStage(leadId, stageId);
+}
+
+function saveStage(leadId, stageId, reason){
+  const s = SMAP[stageId];
+  const e = { rep:me().id, date:today(), type:'status', ref:leadId, stage:stageId };
+  if (reason) e.note = reason;
+  if (s.won){
+    const a = Number(($('#sAmt')||{}).value || 0);
+    if (!a || a <= 0){ toast('ใส่ยอดด้วยครับ'); return; }
+    e.amount = a;
+  }
+  Store.add(e);
+  closeModal();
+  render();
+  if (s.won){ confetti(); toast('ปิดได้ ' + Number(e.amount).toLocaleString() + ' ฿ 🎉', true); }
+  else toast(s.icon + ' อัปเดตเป็น "' + s.label + '"');
+}
+
+function commit(e){
+  const before = cleared(e.rep, e.date);
+  Store.add(e);
+  render();
+  if (e.type === 'deal'){ toast('ปิดได้อีก ' + Number(e.amount).toLocaleString() + ' ฿ 🎉', true); return; }
+  const q = QMAP[e.type];
+  const c = countOf(e.rep, e.date, e.type);
+  if (!before && cleared(e.rep, e.date)){ confetti(); toast('เคลียร์เดลี่! +' + BONUS + ' โบนัส 🎊', true); }
+  else if (e.type === 'lead' && c === QMAP.lead.target){ confetti(); toast('ครบ ' + QMAP.lead.target + ' เจ้าแล้ว! 🔥', true); }
+  else toast('+' + Math.round(q.pts/q.target) + ' แต้ม · ' + q.title);
+}
+function undoLast(type){
+  const u = me(), d = today();
+  const list = Store.entries().filter(e => e.rep===u.id && e.date===d && e.type===type).sort((a,b)=>b.ts-a.ts);
+  if (!list.length) return;
+  Store.remove(list[0].id); render(); toast('ลบรายการล่าสุดแล้ว');
+}
+function delEntry(id){ Store.remove(id); render(); toast('ลบแล้ว'); }
+
+function setRange(r){ LBRANGE = r; render(); }
+
+function copySum(id){
+  const t = document.getElementById(id).textContent;
+  const done = () => toast('ก๊อปแล้ว — ไปวางในกลุ่ม Line ได้เลย ✅');
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(done).catch(fallback);
+  else fallback();
+  function fallback(){
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ toast('ก๊อปไม่ได้ — กดค้างเลือกเองครับ'); }
+    ta.remove();
+  }
+}
+
+function saveGoal(){
+  const c = cfg();
+  c.goal = { baseline:+$('#sBase').value||0, target:+$('#sTgt').value||0,
+             conversion:+$('#sConv').value||20, avgDeal:+$('#sAvg').value||300000 };
+  Store.saveCfg(c); render(); toast('บันทึกเป้าหมายแล้ว');
+}
+function saveSync(){
+  const c = cfg();
+  c.syncUrl = $('#sUrl').value.trim();
+  c.syncToken = $('#sTok').value.trim();
+  c.pin = $('#sPin').value.trim() || '1234';
+  Store.saveCfg(c);
+  toast('บันทึกแล้ว — กำลังซิงก์');
+  Sync.push(); Sync.pull();
+}
+function exportCsv(){
+  const rows = [['id','rep','date','type','name','phone','note','amount','ts','ref','stage','ชื่อลูกค้า(อ้างอิง)']];
+  Store.entries().forEach(e => {
+    const ref = e.ref ? (Store.entries().find(x => x.id === e.ref) || {}).name || '' : '';
+    rows.push([e.id,e.rep,e.date,e.type,e.name||'',e.phone||'',e.note||'',e.amount||'',
+               new Date(e.ts).toISOString(),e.ref||'',e.stage||'',ref]);
+  });
+  const csv = '﻿' + rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'sales-quest-' + today() + '.csv';
+  a.click();
+}
+function resetAll(){
+  if (!confirm('ล้างข้อมูลทั้งหมดในเครื่องนี้? (ข้อมูลใน Google Sheet ยังอยู่)')) return;
+  [Store.K_E, Store.K_Q, Store.K_U].forEach(k => localStorage.removeItem(k));
+  render(); toast('ล้างแล้ว');
+}
+
+/* =====================================================================
+   Setup link: ส่งค่าเชื่อม Google Sheet ผ่านลิงก์ แทนที่จะฝังไว้ในไฟล์
+   เพราะ repo บน GitHub Pages เป็น public — ฝังโทเคนไว้เท่ากับเปิดให้ใครก็อ่านข้อมูลได้
+   ตั้มส่งลิงก์นี้ให้เซลทางไลน์ครั้งเดียว เครื่องเขาจำเอง
+   ===================================================================== */
+const Setup = {
+  enc(s){
+    return btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s)))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  },
+  dec(s){
+    const b = atob(s.replace(/-/g,'+').replace(/_/g,'/'));
+    return new TextDecoder().decode(Uint8Array.from(b, c => c.charCodeAt(0)));
+  },
+
+  link(){
+    const c = cfg();
+    const payload = this.enc(JSON.stringify({ u:c.syncUrl, t:c.syncToken }));
+    return location.origin + location.pathname + '#setup=' + payload;
+  },
+
+  /* อ่านค่าจาก URL ตอนเปิดแอป แล้วลบ hash ทิ้งทันที ไม่ให้ค้างในประวัติเบราว์เซอร์ */
+  apply(){
+    const m = location.hash.match(/setup=([A-Za-z0-9\-_]+)/);
+    if (!m) return false;
+    try{
+      const d = JSON.parse(this.dec(m[1]));
+      const c = cfg();
+      if (d.u) c.syncUrl = d.u;
+      if (d.t) c.syncToken = d.t;
+      Store.saveCfg(c);
+      history.replaceState(null, '', location.pathname);
+      return true;
+    }catch(e){
+      history.replaceState(null, '', location.pathname);
+      return false;
+    }
+  },
+
+  share(){
+    const c = cfg();
+    if (!c.syncUrl){ toast('ยังไม่ได้ตั้งค่า Google Sheet'); return; }
+    const url = this.link();
+    modal(`<div class="mt">🔗 ลิงก์ตั้งค่าสำหรับเซล</div>
+      <div class="ms">ส่งลิงก์นี้ให้เซลทางไลน์ กดครั้งเดียว เครื่องเขาจำเลย ไม่ต้องกรอกอะไร</div>
+      <pre class="sum" style="font-size:11px">${esc(url)}</pre>
+      <div class="warn" style="margin-top:12px">🔒 ลิงก์นี้มีกุญแจเข้าข้อมูล — ส่งเฉพาะคนในทีม อย่าโพสต์ที่สาธารณะ</div>
+      <div class="btns"><button class="btn gh" onclick="closeModal()">ปิด</button>
+        <button class="btn" onclick="copyText('${url.replace(/'/g,"\\'")}')">📋 ก๊อปลิงก์</button></div>`);
+  }
+};
+
+function copyText(t){
+  const done = () => toast('ก๊อปแล้ว ✅');
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(done).catch(fb); else fb();
+  function fb(){
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ toast('ก๊อปไม่ได้ กดค้างเลือกเองครับ'); }
+    ta.remove();
+  }
+}
+
+/* =====================================================================
+   Lock: รหัสผ่านทั้งแอป
+   กันคนที่ได้ลิงก์ไปเปิดดูข้อมูลลูกค้า/ยอดขาย
+   ⚠️ นี่คือการล็อกฝั่งหน้าเว็บ กันคนทั่วไปได้ แต่ไม่ได้กันคนที่เก่งเทคนิคจริงๆ
+      ถ้าต้องการความปลอดภัยระดับนั้นต้องมี server ตรวจรหัส ซึ่งเกินจำเป็นสำหรับงานนี้
+   ===================================================================== */
+const Lock = {
+  K_HASH:'sq_pass', K_OK:'sq_unlocked',
+
+  async hash(s){
+    const salt = 'sales-quest::';
+    if (window.crypto && crypto.subtle && window.isSecureContext){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + s));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+    // สำรอง: เปิดผ่าน file:// ที่ไม่มี crypto.subtle
+    let h = 0, str = salt + s;
+    for (let i=0;i<str.length;i++){ h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
+    return 'x' + (h >>> 0).toString(16);
+  },
+
+  isSet(){ return !!localStorage.getItem(this.K_HASH); },
+  unlocked(){ return localStorage.getItem(this.K_OK) === '1'; },
+
+  screen(html){
+    const el = document.createElement('div');
+    el.className = 'lock';
+    el.id = 'lockScreen';
+    el.innerHTML = `<img src="icons/icon-192.png" alt="MK">${html}`;
+    document.body.appendChild(el);
+    return el;
+  },
+  clear(){ const el = $('#lockScreen'); if (el) el.remove(); },
+
+  /* ตั้งรหัสครั้งแรก */
+  setup(){
+    this.clear();
+    this.screen(`<h1>ตั้งรหัสผ่าน</h1>
+      <p>ตั้งรหัสสำหรับเปิดแอปนี้ ใส่ครั้งเดียวต่อเครื่อง<br>จำไว้ให้ดีนะครับ</p>
+      <input class="inp" id="p1" type="password" inputmode="numeric" placeholder="รหัสใหม่" autocomplete="new-password">
+      <input class="inp" id="p2" type="password" inputmode="numeric" placeholder="ยืนยันอีกครั้ง" autocomplete="new-password" style="margin-top:10px">
+      <button class="btn gold" id="pGo">เริ่มใช้งาน</button>
+      <div class="err" id="pErr"></div>`);
+    const go = async () => {
+      const a = $('#p1').value.trim(), b = $('#p2').value.trim();
+      if (a.length < 4){ $('#pErr').textContent = 'รหัสต้องยาวอย่างน้อย 4 ตัว'; return; }
+      if (a !== b){ $('#pErr').textContent = 'รหัสสองช่องไม่ตรงกัน'; return; }
+      localStorage.setItem(this.K_HASH, await this.hash(a));
+      localStorage.setItem(this.K_OK, '1');
+      this.clear(); boot();
+      toast('ตั้งรหัสเรียบร้อย 🔐', true);
+    };
+    $('#pGo').onclick = go;
+    $('#p2').onkeydown = e => { if (e.key === 'Enter') go(); };
+    $('#p1').focus();
+  },
+
+  /* ใส่รหัสเพื่อเข้า */
+  ask(){
+    this.clear();
+    this.screen(`<h1>Sales Quest</h1>
+      <p>ใส่รหัสผ่านเพื่อเข้าใช้งาน</p>
+      <input class="inp" id="p1" type="password" inputmode="numeric" placeholder="รหัสผ่าน" autocomplete="current-password">
+      <button class="btn gold" id="pGo">ปลดล็อก</button>
+      <div class="err" id="pErr"></div>
+      <button class="link" id="pForgot">ลืมรหัสผ่าน?</button>`);
+    const go = async () => {
+      const v = $('#p1').value.trim();
+      if (await this.hash(v) === localStorage.getItem(this.K_HASH)){
+        localStorage.setItem(this.K_OK, '1');
+        this.clear(); boot();
+        return;
+      }
+      $('#pErr').textContent = 'รหัสไม่ถูกต้อง';
+      $('#lockScreen').classList.add('shake');
+      setTimeout(() => $('#lockScreen') && $('#lockScreen').classList.remove('shake'), 420);
+      $('#p1').value = ''; $('#p1').focus();
+    };
+    $('#pGo').onclick = go;
+    $('#p1').onkeydown = e => { if (e.key === 'Enter') go(); };
+    $('#pForgot').onclick = () => {
+      if (!confirm('ตั้งรหัสใหม่ ต้องล้างข้อมูลในเครื่องนี้ก่อน\n\nถ้าเคยต่อ Google Sheet ไว้ ข้อมูลยังอยู่ครบ ซิงก์กลับมาได้\nถ้าไม่เคยต่อ ข้อมูลจะหายถาวร\n\nยืนยันล้าง?')) return;
+      localStorage.clear();
+      location.reload();
+    };
+    $('#p1').focus();
+  },
+
+  /* เรียกตอนเปิดแอป — คืน true ถ้าผ่านแล้ว */
+  gate(){
+    if (!this.isSet()){ this.setup(); return false; }
+    if (!this.unlocked()){ this.ask(); return false; }
+    return true;
+  },
+
+  /* เปลี่ยนรหัสจากหน้าตั้งค่า */
+  change(){
+    modal(`<div class="mt">🔐 เปลี่ยนรหัสผ่าน</div>
+      <div class="ms">ต้องใส่รหัสเดิมก่อน</div>
+      <label>รหัสเดิม</label><input class="inp" id="cOld" type="password">
+      <label>รหัสใหม่</label><input class="inp" id="cNew" type="password">
+      <label>ยืนยันรหัสใหม่</label><input class="inp" id="cNew2" type="password">
+      <div class="btns"><button class="btn gh" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn" id="cGo">เปลี่ยนรหัส</button></div>`);
+    $('#cGo').onclick = async () => {
+      if (await this.hash($('#cOld').value.trim()) !== localStorage.getItem(this.K_HASH)){
+        toast('รหัสเดิมไม่ถูกต้อง'); return;
+      }
+      const n = $('#cNew').value.trim();
+      if (n.length < 4){ toast('รหัสใหม่ต้องยาวอย่างน้อย 4 ตัว'); return; }
+      if (n !== $('#cNew2').value.trim()){ toast('รหัสใหม่สองช่องไม่ตรงกัน'); return; }
+      localStorage.setItem(this.K_HASH, await this.hash(n));
+      closeModal(); toast('เปลี่ยนรหัสแล้ว 🔐', true);
+    };
+  },
+
+  /* ล็อกเครื่องนี้ (ไม่ลบข้อมูล) */
+  lockNow(){
+    localStorage.removeItem(this.K_OK);
+    location.reload();
+  }
+};
+
+/* ---------------- PWA: ติดตั้งลงหน้าจอโฮม ---------------- */
+const PWA = {
+  prompt: null,
+  standalone(){
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  },
+  isIOS(){
+    return /iphone|ipad|ipod/i.test(navigator.userAgent)
+        || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  },
+  show(){ $('#installBar').classList.remove('hide'); },
+  hide(){ $('#installBar').classList.add('hide'); },
+
+  init(){
+    if (this.standalone() || localStorage.getItem('sq_install_off')) return;
+
+    // Android / Chrome / Edge — มี prompt ให้เรียกได้
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      this.prompt = e;
+      this.show();
+    });
+    window.addEventListener('appinstalled', () => { this.hide(); toast('ติดตั้งแล้ว! 🎉', true); });
+
+    // iOS Safari ไม่มี prompt ต้องบอกวิธีเอง
+    if (this.isIOS()) setTimeout(() => this.show(), 1200);
+
+    $('#installBtn').onclick = async () => {
+      if (this.prompt){
+        this.prompt.prompt();
+        const { outcome } = await this.prompt.userChoice;
+        this.prompt = null;
+        if (outcome === 'accepted') this.hide();
+        return;
+      }
+      // ไม่มี prompt (iOS หรือเบราว์เซอร์ไม่รองรับ) → สอนวิธี
+      modal(`<div class="mt">📲 ติดตั้งลงหน้าจอโฮม</div>
+        <div class="ms">ทำครั้งเดียว แล้วเปิดจากไอคอนได้เลยเหมือนแอปจริง</div>
+        ${this.isIOS()
+          ? `<div class="card" style="margin:0">
+               <div class="log"><span class="li">1️⃣</span><div class="grow">กดปุ่ม <b>แชร์</b> ⎋ ด้านล่างจอ Safari</div></div>
+               <div class="log"><span class="li">2️⃣</span><div class="grow">เลื่อนหา <b>“เพิ่มไปยังหน้าจอโฮม”</b></div></div>
+               <div class="log"><span class="li">3️⃣</span><div class="grow">กด <b>เพิ่ม</b> มุมขวาบน — เสร็จ!</div></div>
+             </div>
+             <div class="warn" style="margin-top:12px">⚠️ ต้องเปิดด้วย <b>Safari</b> เท่านั้น ถ้าเปิดใน Chrome/Line จะไม่มีเมนูนี้</div>`
+          : `<div class="card" style="margin:0">
+               <div class="log"><span class="li">1️⃣</span><div class="grow">กดเมนู <b>⋮</b> มุมขวาบนของเบราว์เซอร์</div></div>
+               <div class="log"><span class="li">2️⃣</span><div class="grow">เลือก <b>“ติดตั้งแอป”</b> หรือ <b>“เพิ่มลงในหน้าจอหลัก”</b></div></div>
+             </div>`}
+        <div class="btns"><button class="btn" onclick="closeModal()">เข้าใจแล้ว</button></div>`);
+    };
+    $('#installX').onclick = () => { localStorage.setItem('sq_install_off','1'); this.hide(); };
+  }
+};
+
+/* service worker — ให้เปิดได้ตอนไม่มีเน็ต (ต้องรันผ่าน http/https ไม่ใช่ file://) */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+/* ---------------- boot ---------------- */
+let booted = false;
+function boot(){
+  if (booted) return;
+  booted = true;
+
+  document.querySelectorAll('.nb button').forEach(b =>
+    b.onclick = () => { TAB = b.dataset.tab; render(); });
+  $('#whoBtn').onclick = () => pickUser();
+
+  render();
+  PWA.init();
+  Sync.push();          // ส่งของที่ค้างจากรอบก่อน (เช่น เน็ตหลุดตอนปิดแอป) ก่อนเลย
+  Sync.pull(true);
+  setInterval(() => { if (cfg().syncUrl){ Sync.push(); Sync.pull(true); } }, 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden){ Sync.push(); Sync.pull(true); }
+  });
+  window.addEventListener('online', () => { Sync.push(); Sync.pull(true); });
+}
+
+Setup.apply();          // รับค่าเชื่อม Sheet จากลิงก์ (ถ้ามี) ก่อนอย่างอื่น
+if (Lock.gate()) boot();
+</script>
+</body>
+</html>
