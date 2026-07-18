@@ -1,6 +1,7 @@
 # ห้าม commit ความลับขึ้น repo — repo นี้เป็น public
 # URL + โทเคนของ Google Sheet ส่งผ่าน "ลิงก์ตั้งค่า" แทน (แท็บตั้งค่า → แชร์ลิงก์ตั้งค่า)
 SECRETS-LOCAL.md
+SETUP-LINK.txt
 config.local.js
 secrets.txt
 *.env
