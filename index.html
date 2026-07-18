@@ -987,6 +987,8 @@ function viewSet(){
       <div class="btns"><button class="btn" onclick="saveSync()">บันทึก + ซิงก์</button>
         <button class="btn gh" onclick="Sync.pull()">ดึงข้อมูล</button></div>
       <button class="btn gold" style="width:100%;margin-top:9px" onclick="Setup.share()">🔗 แชร์ลิงก์ตั้งค่าให้เซล</button>
+      <button class="btn gh" style="width:100%;flex:none;margin-top:9px" onclick="reuploadAll()">⬆️ ส่งข้อมูลในเครื่องขึ้นชีทใหม่ทั้งหมด</button>
+      <div class="mut3" style="font-size:11.5px;margin-top:7px">ใช้ตอนข้อมูลในชีทหาย หรือไม่ตรงกับที่เห็นในเครื่อง</div>
       <div class="mut3" style="font-size:11.5px;margin-top:12px">
         สถานะ: ${Sync.state==='on'?'✅ เชื่อมแล้ว':Sync.state==='err'?'⚠️ เชื่อมไม่ได้':'⚪ ยังไม่เชื่อม'}
         · ค้างส่ง ${Store.queue().length} รายการ · ทั้งหมด ${Store.entries().length} รายการ
@@ -1212,6 +1214,19 @@ function saveSync(){
   toast('บันทึกแล้ว — กำลังซิงก์');
   Sync.push(); Sync.pull();
 }
+/* ส่งข้อมูลในเครื่องขึ้นชีทใหม่ทั้งหมด
+   ใช้ตอนชีทหายหรือไม่ตรงกับเครื่อง — ฝั่งชีทกันซ้ำด้วย id อยู่แล้ว ส่งซ้ำได้ไม่พัง */
+function reuploadAll(){
+  const all = Store.entries();
+  if (!all.length){ toast('ไม่มีข้อมูลในเครื่องนี้'); return; }
+  if (!cfg().syncUrl){ toast('ยังไม่ได้เชื่อม Google Sheet'); return; }
+  if (!confirm('ส่งข้อมูลทั้งหมด ' + all.length + ' รายการในเครื่องนี้ขึ้น Google Sheet อีกครั้ง?\n\nรายการที่มีอยู่แล้วในชีทจะไม่ซ้ำ ระบบกันให้อัตโนมัติ')) return;
+  Store.setQueue(all.slice());
+  toast('กำลังส่ง ' + all.length + ' รายการ…');
+  Sync.push();
+  setTimeout(() => { render(); if (!Store.queue().length) toast('ส่งครบแล้ว ✅', true); }, 3000);
+}
+
 function exportCsv(){
   const rows = [['id','rep','date','type','name','phone','note','amount','ts','ref','stage','ชื่อลูกค้า(อ้างอิง)']];
   Store.entries().forEach(e => {
