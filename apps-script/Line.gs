@@ -119,12 +119,12 @@ function handleLineEvents_(body) {
 
     if (isTrigger_(text)) {
       var target = bufFind_(groupId, quoted);
-      if (!target) { lineReply_(ev.replyToken, 'ไม่เจอข้อความที่จะจดครับ 🤔 ลองกดตอบกลับข้อความนั้นแล้วพิมพ์ "จด" อีกทีนะครับ'); continue; }
+      if (!target) { lineReply_(ev.replyToken, 'ไม่เจอข้อความที่จะจดค่ะ 🤔 ลองกดตอบกลับข้อความนั้นแล้วพิมพ์ "จด" อีกทีนะคะ'); continue; }
 
       sheetNamed_(INBOX_SHEET, ['ts','groupId','userId','name','text','status','note'])
         .appendRow([new Date().getTime(), groupId, target[2], target[3], target[4], 'pending', '']);
 
-      lineReply_(ev.replyToken, 'รับทราบครับ 📝 เก็บของ' + (target[3] || 'พี่') + 'ไว้แล้ว เดี๋ยวลงระบบให้นะครับ');
+      lineReply_(ev.replyToken, 'รับทราบค่ะ 📝 เก็บของ' + (target[3] || 'พี่') + 'ไว้แล้ว เดี๋ยวลงระบบให้นะคะ');
       continue;
     }
 
