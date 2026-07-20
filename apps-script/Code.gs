@@ -86,7 +86,16 @@ function doPost(e) {
   try {
     lock.waitLock(20000);
     var body = JSON.parse(e.postData.contents);
+
+    // LINE ยิง webhook มา (ไม่มี token เพราะ LINE ไม่รู้จักของเรา)
+    if (body.events) { handleLineEvents_(body); return json_({ ok: true }); }
+
     if (body.token !== TOKEN) return json_({ ok: false, error: 'unauthorized' });
+
+    // Claude สั่งงานฝั่ง LINE
+    if (body.action === 'inbox')     return json_({ ok: true, inbox: inboxList_() });
+    if (body.action === 'inboxDone') { inboxDone_(body.rows, body.note); return json_({ ok: true }); }
+    if (body.action === 'say')       return json_({ ok: true, code: linePush_(body.to, body.text) });
     if (body.action !== 'save') return json_({ ok: false, error: 'unknown action' });
 
     var sh = sheet_();
