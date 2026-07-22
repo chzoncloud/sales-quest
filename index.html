@@ -108,9 +108,19 @@ header{position:sticky;top:0;z-index:40;backdrop-filter:blur(14px);
   background:rgba(255,140,66,.12);border:1px solid rgba(255,140,66,.3);border-radius:12px;padding:8px 11px}
 
 /* ---------- quest ---------- */
-.qhead{display:flex;align-items:baseline;gap:8px;margin:0 4px 10px}
+.qhead{display:flex;align-items:center;gap:8px;margin:0 4px 10px}
 .qhead b{font-size:16px}
-.qpts{margin-left:auto;font-weight:900;color:var(--gold);font-size:15px}
+.qpts{font-weight:900;color:var(--gold);font-size:15px}
+/* ปุ่มเลื่อนดูสัปดาห์เก่า */
+.wnav{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--tx2);
+  border-radius:10px;width:32px;height:32px;flex:none;font-size:13px;line-height:1}
+.wnav:active{transform:scale(.92)}
+.wnav:disabled{opacity:.25}
+/* กำลังดูอดีต — ทำให้รู้ว่าไม่ใช่สัปดาห์ปัจจุบัน */
+.past .quest,.past .card{opacity:.92}
+.past::before{content:'กำลังดูย้อนหลัง';display:block;text-align:center;font-size:11.5px;font-weight:700;
+  color:var(--gold);background:rgba(255,197,61,.12);border:1px solid rgba(255,197,61,.3);
+  border-radius:999px;padding:5px 10px;margin:0 4px 12px}
 .quest{display:flex;align-items:center;gap:13px;padding:13px 14px;margin-bottom:10px;border-radius:16px;
   background:linear-gradient(160deg,var(--card),var(--bg2));border:1px solid rgba(255,255,255,.08);
   transition:.22s;position:relative;overflow:hidden}
@@ -385,7 +395,10 @@ const ACTS = {
   lead:   { icon:'🎯', title:'ทักลูกค้าใหม่' },
   meet:   { icon:'📅', title:'เข้าพบ / นัดหมาย' },
   quote:  { icon:'💰', title:'เสนอราคา / โชว์สินค้า' },
-  follow: { icon:'🔄', title:'ตามลูกค้าเก่า' }
+  follow: { icon:'🔄', title:'ตามลูกค้าเก่า' },
+  /* สองอันล่างมาจากไลน์เท่านั้น — ส่งตัวอย่างไม่มีเป้า เพราะแจกของฟรีวัดผลไม่ได้ */
+  sample: { icon:'🧪', title:'ส่งตัวอย่าง' },
+  won:    { icon:'🏆', title:'ปิดดีล' }
 };
 
 /* ขั้นตอนการขาย — ลูกค้า 1 เจ้าเดินผ่านขั้นพวกนี้
@@ -672,10 +685,15 @@ const monthLabel = offset => {
 };
 
 /* จำนวนดีลที่ปิดได้ในเดือนนั้น — นับจากลูกค้าที่ถูกมาร์กเป็น "ปิดได้" */
+/* "ปิดได้" มาได้ 3 ทาง: กดปุ่มในแอป (deal) · มาร์กสถานะเป็นปิดได้ (status/won)
+   · น้องเควสจดมาจากไลน์ (type won) */
+const isWon = e => e.type === 'deal' || e.type === 'won'
+              || (e.type === 'status' && e.stage === 'won');
+
 function winCount(repId, offset){
   const mk = monthKey(offset);
   return Store.entries().filter(e =>
-    e.rep === repId && e.type === 'status' && e.stage === 'won' &&
+    e.rep === repId && isWon(e) &&
     String(e.date).slice(0,7) === mk).length;
 }
 const hitMonthMin = (repId, offset) => winCount(repId, offset) >= MONTHLY.min;
@@ -781,9 +799,7 @@ const Lead = {
 function bossStats(){
   const g = cfg().goal;
   const gap = Math.max(0, g.target - g.baseline);
-  // ยอดมาได้ 2 ทาง: บันทึกยอดตรงๆ (deal) หรือมาร์กลูกค้าเป็น "ปิดได้" (status/won)
-  const won = Store.entries()
-    .filter(e => e.type === 'deal' || (e.type === 'status' && e.stage === 'won'))
+  const won = Store.entries().filter(isWon)
     .reduce((s,e) => s + (Number(e.amount)||0), 0);
   const pct = gap ? Math.min(100, won/gap*100) : 0;
   const conv = Math.max(1, Number(g.conversion)||20) / 100;
@@ -814,11 +830,19 @@ function render(){
 function goTab(t){ TAB = t; render(); window.scrollTo(0,0); }
 function setLeadView(v){ LEADVIEW = v; render(); }
 
+/* ย้อนดูสัปดาห์เก่า — 0 = สัปดาห์นี้, 1 = สัปดาห์ที่แล้ว, ... (ย้อนได้ 26 สัปดาห์) */
+let WOFF = 0;
+function shiftWeek(n){
+  WOFF = Math.min(26, Math.max(0, WOFF + n));
+  render();
+}
+
 /* ---------- TAB: เควสต์ ---------- */
 function viewQuest(){
   const u = me(), st = streakOf(u.id);
   const b = bossStats();
-  const pts = weekPoints(u.id,0);
+  const w = WOFF, now = w === 0;                 // now = กำลังดูสัปดาห์ปัจจุบัน
+  const pts = weekPoints(u.id,w);
   const daysLeft = 7 - weekDates(0).length;      // เหลืออีกกี่วันในสัปดาห์นี้
 
   let h = '';
@@ -835,7 +859,7 @@ function viewQuest(){
 
   /* เตือนเมื่อใกล้หมดสัปดาห์แต่ยังไม่ครบ */
   const missing = QUESTS.filter(q => questCount(u.id,q,0) < q.min);
-  if (daysLeft <= 2 && missing.length){
+  if (now && daysLeft <= 2 && missing.length){
     h += `<div class="card warn" style="margin-top:-6px">⚠️ เหลืออีก ${daysLeft === 0 ? 'วันนี้วันสุดท้าย' : daysLeft + ' วัน'} จบสัปดาห์ —
       ยังขาด ${missing.map(q => q.title + ' อีก ' + (q.min - questCount(u.id,q,0))).join(' · ')}</div>`;
   }
@@ -869,13 +893,17 @@ function viewQuest(){
     </div>`;
   }
 
-  /* quests — เป้ารายสัปดาห์ */
-  h += `<div class="qhead"><b>เป้าสัปดาห์นี้</b>
-        <span class="mut3" style="font-size:11.5px">${weekLabel(0)}${daysLeft ? ' · เหลือ ' + daysLeft + ' วัน' : ' · วันสุดท้าย'}</span>
-        <span class="qpts">${pts} แต้ม</span></div>`;
+  /* quests — เป้ารายสัปดาห์ (เลื่อนย้อนดูสัปดาห์เก่าได้) */
+  h += `<div class="qhead">
+        <button class="wnav" onclick="shiftWeek(1)" title="สัปดาห์ก่อน">◀</button>
+        <b class="grow">${now ? 'เป้าสัปดาห์นี้' : w === 1 ? 'สัปดาห์ที่แล้ว' : w + ' สัปดาห์ก่อน'}
+          <div class="mut3" style="font-size:11.5px;font-weight:600">${weekLabel(w)}${
+            now ? (daysLeft ? ' · เหลือ ' + daysLeft + ' วัน' : ' · วันสุดท้าย') : ''}</div></b>
+        <span class="qpts">${pts} แต้ม</span>
+        <button class="wnav" onclick="shiftWeek(-1)" ${now?'disabled':''} title="สัปดาห์ถัดไป">▶</button></div>`;
 
   QUESTS.forEach(q => {
-    const c = questCount(u.id,q,0);
+    const c = questCount(u.id,q,w);
     const okMin = c >= q.min, okMax = c >= q.max;
     const pct = Math.min(100, c / q.max * 100);
     const minMark = q.min / q.max * 100;
@@ -887,12 +915,10 @@ function viewQuest(){
         <div class="qs">${okMax ? '🏆 ถึงเป้าเยี่ยมแล้ว!' : okMin ? 'ผ่านแล้ว · เป้าเยี่ยม ' + q.max : q.sub} · ${q.pts} แต้ม/ครั้ง</div>
         <div class="bar"><i style="width:${pct}%"></i><u style="left:${minMark}%"></u></div>
       </div>
-      ${c>0 ? `<button class="minus" onclick="undoLast('${q.id}')">−</button>` : ''}
-      <button class="qb" onclick="logQuest('${q.types[0]}')">+</button>
     </div>`;
   });
 
-  const min = hitMin(u.id,0), max = hitMax(u.id,0);
+  const min = hitMin(u.id,w), max = hitMax(u.id,w);
   h += `<div class="clear ${min?'on':''}">${max
         ? `🏆 ถึงเป้าเยี่ยมทุกข้อ! +${BONUS + MAX_BONUS} แต้มโบนัส`
         : min ? `🎊 ครบขั้นต่ำแล้ว! +${BONUS} แต้ม — ดันต่อถึงเป้าเยี่ยมรับอีก ${MAX_BONUS}`
@@ -933,12 +959,13 @@ function viewQuest(){
         <div><b>${baht(b.left)}</b><span>เหลืออีก</span></div>
         <div><b>${b.leadsNeeded}</b><span>ลูกค้าใหม่<br>ที่ต้องหาอีก</span></div>
       </div>
-      <button class="btn gold" style="margin-top:12px;width:100%" onclick="logDeal()">💵 บันทึกยอดที่ปิดได้</button>
     </div>`;
 
-  /* log วันนี้ */
-  const mine = Store.entries().filter(e => e.rep===u.id && e.date===today()).sort((a,b) => b.ts-a.ts);
-  h += `<div class="h2">บันทึกวันนี้ (${mine.length})</div><div class="card">`;
+  /* log ของสัปดาห์ที่กำลังดู */
+  const days = weekDates(w);
+  const mine = Store.entries().filter(e => e.rep===u.id && days.includes(e.date))
+                              .sort((a,b) => b.ts-a.ts);
+  h += `<div class="h2">${now ? 'บันทึกสัปดาห์นี้' : 'บันทึกสัปดาห์นั้น'} (${mine.length})</div><div class="card">`;
   h += mine.length ? mine.map(e => {
         const q = ACTS[e.type];
         const st = e.type === 'status' ? SMAP[e.stage] : null;
@@ -952,12 +979,13 @@ function viewQuest(){
           ${e.amount?` <span style="color:var(--gold);font-weight:800">${Number(e.amount).toLocaleString()} ฿</span>`:''}
           ${e.phone?`<div class="mut3" style="font-size:11.5px">📞 ${esc(e.phone)}</div>`:''}
           ${e.note ?`<div class="mut3" style="font-size:11.5px">${esc(e.note)}</div>`:''}</div>
-          <span class="lt">${new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>
+          <span class="lt">${e.date === today() ? 'วันนี้' : thDate(e.date)}<br>${
+            new Date(e.ts).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</span>
           <button class="del" onclick="editEntry('${e.id}')" title="แก้ไข">✏️</button>
           <button class="del" onclick="delEntry('${e.id}')" title="ลบ">🗑</button></div>`;
-      }).join('') : '<div class="empty">ยังไม่มีบันทึกวันนี้ — กด + ที่เควสต์ด้านบนได้เลย</div>';
+      }).join('') : '<div class="empty">ยังไม่มีบันทึก — สรุปงานในไลน์ให้น้องเควสจดได้เลย</div>';
   h += `</div>`;
-  return h;
+  return now ? h : `<div class="past">${h}</div>`;
 }
 
 /* ---------- TAB: ลูกค้า ---------- */
@@ -1452,7 +1480,7 @@ function delEntry(id){
 function editEntry(id){
   const e = Store.entries().find(x => x.id === id);
   if (!e) return;
-  const isDeal = e.type === 'deal' || (e.type === 'status' && e.stage === 'won');
+  const isDeal = isWon(e);
   const q = ACTS[e.type], st = e.type === 'status' ? SMAP[e.stage] : null;
 
   modal(`<div class="mt">✏️ แก้ไขรายการ</div>
@@ -1891,6 +1919,14 @@ function boot(){
   document.querySelectorAll('.nb button').forEach(b =>
     b.onclick = () => { TAB = b.dataset.tab; render(); });
   $('#whoBtn').onclick = () => pickUser();
+
+  /* ตั้งแต่เวอร์ชันนี้ ชีทเป็นฐานข้อมูลจริง เครื่องเป็นแค่สำเนา
+     ล้างของเก่าที่ค้างในเครื่องทิ้งรอบเดียวต่อเครื่อง แล้วดึงใหม่จากชีท
+     (ข้ามถ้ายังไม่ได้เชื่อมชีท ไม่งั้นข้อมูลหายโดยไม่มีที่ดึงกลับ) */
+  if (cfg().syncUrl && localStorage.getItem('sq_dataver') !== '2'){
+    Store.setEntries([]); Store.setQueue([]);
+    localStorage.setItem('sq_dataver','2');
+  }
 
   render();
   PWA.init();
