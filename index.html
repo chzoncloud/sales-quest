@@ -427,6 +427,19 @@ const LOSS_REASONS = [
 
 const NUDGE_DAYS = 3;   // ทักไปแล้วกี่วันถึงจะเตือนให้อัปเดต
 
+/* ตัดคำนำหน้าบริษัทออกก่อนเทียบชื่อ ให้ "บจก.ฮอนด้า" กับ "HONDA" ที่พิมพ์ต่างกัน
+   นับเป็นลูกค้าเจ้าเดียวกัน — ต้องใช้กติกาเดียวกับฝั่งชีทของน้องเควส */
+const normName = s => String(s || '')
+  .replace(/บริษัท|บจก\.?|หจก\.?|ห้าง|บ\.|จำกัด|มหาชน|\(.*?\)/g, '')
+  .replace(/\s+/g, '')
+  .toLowerCase();
+
+/* ถ้ารายการไหนไม่ได้บอกสถานะมา ให้เดาจากชนิดกิจกรรมแทน */
+const TYPE2STAGE = {
+  lead:'new', follow:'talked', meet:'visited',
+  sample:'sample', quote:'quoted', won:'won', deal:'won'
+};
+
 /* ---------------- Store: อนาคตเปลี่ยนไปใช้ DB จริงแก้แค่ชั้นนี้ ------------- */
 const Store = {
   K_E:'sq_entries', K_C:'sq_config', K_U:'sq_user', K_Q:'sq_queue',
@@ -727,30 +740,60 @@ function totalPoints(repId){
    (เก็บแบบ append-only เพื่อให้ซิงก์กับ Google Sheet ง่ายและตรวจย้อนหลังได้)
    ===================================================================== */
 const Lead = {
+  /* ลูกค้า 1 เจ้า = ทุก entry ที่ชื่อเดียวกัน (ของเซลคนเดียวกัน) มัดรวมกัน
+     ไม่ว่าจะมาจากเควสต์ไหน — ทัก เข้าพบ ส่งตัวอย่าง เสนอราคา ปิดดีล นับเป็นเจ้าเดียวกันหมด
+     คีย์ที่ใช้เทียบตัดคำนำหน้าบริษัทออก ให้ตรงกับที่น้องเควสใช้ฝั่งชีท */
   all(repId){
-    return Store.entries()
-      .filter(e => e.type === 'lead' && (!repId || e.rep === repId))
-      .sort((a,b) => b.ts - a.ts);
+    const map = new Map();      // ชื่อลูกค้า -> ก้อนข้อมูลลูกค้าเจ้านั้น
+    const own = new Map();      // id ของ entry -> ลูกค้าเจ้าไหน (ไว้ต่อ entry อัปเดตสถานะ)
+
+    Store.entries()
+      .filter(e => !repId || e.rep === repId)
+      .sort((a,b) => a.ts - b.ts)                 // เก่า→ใหม่ ตัวหลังทับตัวหน้า
+      .forEach(e => {
+        let c;
+        if (e.type === 'status'){
+          c = own.get(e.ref);                     // อัปเดตสถานะ เกาะไปกับลูกค้าที่อ้างถึง
+          if (!c) return;
+        } else {
+          if (!e.name) return;                    // ไม่มีชื่อ = นับเป็นลูกค้าไม่ได้
+          const k = e.rep + '|' + normName(e.name);
+          c = map.get(k);
+          if (!c){
+            c = { id:e.id, rep:e.rep, name:e.name, date:e.date,
+                  ts:e.ts, lastTs:e.ts, stage:'new', ids:[] };
+            map.set(k, c);
+          }
+          c.name = e.name;                        // ใช้ชื่อที่พิมพ์ล่าสุด
+        }
+        c.ids.push(e.id);
+        own.set(e.id, c);
+        c.lastTs = e.ts;
+        const s = (e.stage && SMAP[e.stage]) ? e.stage : TYPE2STAGE[e.type];
+        if (s) c.stage = s;
+      });
+
+    return [...map.values()].sort((a,b) => b.lastTs - a.lastTs);
   },
 
-  /* ประวัติการอัปเดตของลูกค้าเจ้านี้ เรียงเก่า→ใหม่ */
+  _find(leadId){ return this.all().find(l => l.ids.includes(leadId)); },
+
+  /* ทุกความเคลื่อนไหวของลูกค้าเจ้านี้ เรียงเก่า→ใหม่ */
   history(leadId){
-    return Store.entries()
-      .filter(e => e.type === 'status' && e.ref === leadId)
+    const c = this._find(leadId);
+    const ids = c ? c.ids : [leadId];
+    return Store.entries().filter(e => ids.includes(e.id))
       .sort((a,b) => a.ts - b.ts);
   },
 
-  /* สถานะล่าสุด — ยังไม่เคยอัปเดต = 'new' */
+  /* สถานะล่าสุด */
   stage(leadId){
-    const h = this.history(leadId);
-    return h.length ? (h[h.length-1].stage || 'new') : 'new';
+    const c = this._find(leadId);
+    return c ? c.stage : 'new';
   },
 
-  /* อัปเดตล่าสุดเมื่อไหร่ (ถ้าไม่เคยอัปเดต ใช้เวลาที่ทัก) */
-  lastTouch(lead){
-    const h = this.history(lead.id);
-    return h.length ? h[h.length-1].ts : lead.ts;
-  },
+  /* ขยับล่าสุดเมื่อไหร่ */
+  lastTouch(lead){ return lead.lastTs || lead.ts; },
 
   daysSince(lead){
     return Math.floor((Date.now() - this.lastTouch(lead)) / 86400000);
@@ -764,20 +807,20 @@ const Lead = {
   /* เจ้าที่ยังไม่จบ และเงียบมาเกิน NUDGE_DAYS วัน — ต้องตามอัปเดต */
   needUpdate(repId){
     return this.all(repId)
-      .filter(l => this.isOpen(l.id) && this.daysSince(l) >= NUDGE_DAYS)
-      .sort((a,b) => this.lastTouch(a) - this.lastTouch(b));   // เงียบนานสุดขึ้นก่อน
+      .filter(l => SMAP[l.stage] && SMAP[l.stage].open && this.daysSince(l) >= NUDGE_DAYS)
+      .sort((a,b) => a.lastTs - b.lastTs);   // เงียบนานสุดขึ้นก่อน
   },
 
   /* เจ้าที่ยังตามอยู่ (ยังไม่จบ) */
   open(repId){
-    return this.all(repId).filter(l => this.isOpen(l.id));
+    return this.all(repId).filter(l => SMAP[l.stage] && SMAP[l.stage].open);
   },
 
   /* นับจำนวนตามขั้น — ไว้ทำ funnel */
   funnel(repId){
     const out = {};
     STAGES.forEach(s => out[s.id] = 0);
-    this.all(repId).forEach(l => out[this.stage(l.id)]++);
+    this.all(repId).forEach(l => out[l.stage]++);
     return out;
   },
 
@@ -1025,14 +1068,14 @@ function viewLeads(){
       : `<div class="card"><div class="empty">ยังไม่มีเจ้าที่กำลังตามอยู่</div></div>`;
   }
   else {
-    if (!all.length) h += `<div class="card"><div class="empty">ยังไม่มีลูกค้า — ไปกดเควสต์ "ทักลูกค้าใหม่" ก่อน</div></div>`;
+    if (!all.length) h += `<div class="card"><div class="empty">ยังไม่มีลูกค้า — สรุปงานในไลน์ให้น้องเควสจดได้เลย</div></div>`;
     else {
-      // จัดกลุ่มตามวันที่ทัก = ประวัติว่าแต่ละวันทำอะไรไปบ้าง
-      const byDate = {};
-      all.forEach(l => (byDate[l.date] = byDate[l.date] || []).push(l));
-      Object.keys(byDate).sort().reverse().forEach(d => {
-        h += `<div class="h2" style="margin:16px 4px 8px">${thDate(d)} · ${byDate[d].length} เจ้า</div>`;
-        h += byDate[d].map(l => leadCard(l)).join('');
+      // จัดกลุ่มตามสถานะ = เห็นภาพว่าลูกค้าแต่ละเจ้าเดินไปถึงไหนแล้ว
+      STAGES.forEach(s => {
+        const g = all.filter(l => l.stage === s.id);
+        if (!g.length) return;
+        h += `<div class="h2" style="margin:16px 4px 8px">${s.icon} ${s.label} · ${g.length} เจ้า</div>`;
+        h += g.map(l => leadCard(l)).join('');
       });
     }
   }
